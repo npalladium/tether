@@ -5,6 +5,7 @@ import {
 	completeAnimation,
 	DIRECTIONS,
 	type Direction,
+	type LegalPull,
 	type Position,
 	pull,
 	reachableTiles,
@@ -32,8 +33,15 @@ const tiles = Array.from({ length: CELL_COUNT }, (_, index) => ({
 	y: Math.floor(index / defaultLevel.width),
 }));
 
+type LegalSelection = Readonly<{
+	direction: Direction;
+	pull: LegalPull;
+}>;
+
 const session = ref<Session>(beginSession(defaultLevel, loadBestPulls()));
-const activeDirection = ref<Direction | null>(null);
+const selectedDirection = ref<Direction | null>(null);
+const engagedPull = ref<LegalPull | null>(null);
+const tetherEndpoint = ref<Position | null>(null);
 const hasEntered = ref(false);
 const showGuide = ref(false);
 const entryStart = ref<HTMLButtonElement | null>(null);
@@ -42,9 +50,10 @@ const guideButton = ref<HTMLButtonElement | null>(null);
 const guideClose = ref<HTMLButtonElement | null>(null);
 const guideReturn = ref<HTMLButtonElement | null>(null);
 const announcement = ref(
-	"Choose any dotted floor tile, then pull the first box you can see.",
+	"Walk to a dotted floor tile, then select a highlighted box to preview its pull.",
 );
 let settleTimer: number | undefined;
+let tetherFrame: number | undefined;
 
 const reachableKeys = computed(
 	() =>
@@ -63,12 +72,27 @@ const pullOptions = computed(
 		) as Record<Direction, ReturnType<typeof resolvePull>>,
 );
 
-const preview = computed(() => {
-	if (!activeDirection.value || session.value.phase !== "READY")
+const legalSelections = computed<readonly LegalSelection[]>(() => {
+	if (session.value.phase !== "READY") return [];
+	return DIRECTIONS.flatMap((direction) => {
+		const option = pullOptions.value[direction];
+		return option.kind === "LEGAL" ? [{ direction, pull: option }] : [];
+	});
+});
+
+const selectionPreview = computed<LegalPull | undefined>(() => {
+	if (!selectedDirection.value || session.value.phase !== "READY")
 		return undefined;
-	const option = pullOptions.value[activeDirection.value];
+	const option = pullOptions.value[selectedDirection.value];
 	return option.kind === "LEGAL" ? option : undefined;
 });
+
+const isEngagedTether = computed(
+	() => session.value.phase === "SLIDING" && engagedPull.value !== null,
+);
+const visibleTether = computed(() =>
+	isEngagedTether.value ? engagedPull.value : selectionPreview.value,
+);
 
 const isSettling = computed(
 	() => session.value.phase === "WALKING" || session.value.phase === "SLIDING",
@@ -149,31 +173,69 @@ function isOccupied(tile: Position): boolean {
 	);
 }
 
-function tileLabel(tile: Position): string {
-	if (defaultLevel.pillars.some((pillar) => isAt(pillar, tile))) {
-		return `Column ${tile.x + 1}, row ${tile.y + 1}: pillar`;
-	}
-	if (session.value.state.boxes.some((box) => isAt(box, tile))) {
-		return `Column ${tile.x + 1}, row ${tile.y + 1}: box`;
-	}
-	if (isAt(session.value.state.player, tile)) {
-		return `Column ${tile.x + 1}, row ${tile.y + 1}: your position`;
-	}
-	return `Walk to column ${tile.x + 1}, row ${tile.y + 1}`;
+function boxTargetLabel(selection: LegalSelection): string {
+	const { target, destination } = selection.pull;
+	return `Select box at column ${target.x + 1}, row ${target.y + 1}; fixed destination column ${destination.x + 1}, row ${destination.y + 1}`;
 }
 
-function settle(nextSession: Session, message: string): void {
+function clearTetherAnimation(): void {
+	if (tetherFrame !== undefined) {
+		window.cancelAnimationFrame(tetherFrame);
+		tetherFrame = undefined;
+	}
+	tetherEndpoint.value = null;
+}
+
+function animateTether(pull: LegalPull, duration: number): void {
+	tetherEndpoint.value = { ...pull.target };
+	if (duration === 0) {
+		tetherEndpoint.value = { ...pull.destination };
+		return;
+	}
+
+	const start = window.performance.now();
+	const step = (now: number): void => {
+		const elapsed = Math.min((now - start) / duration, 1);
+		const progress = 1 - (1 - elapsed) ** 3;
+		tetherEndpoint.value = {
+			x: pull.target.x + (pull.destination.x - pull.target.x) * progress,
+			y: pull.target.y + (pull.destination.y - pull.target.y) * progress,
+		};
+		if (elapsed < 1) {
+			tetherFrame = window.requestAnimationFrame(step);
+		} else {
+			tetherFrame = undefined;
+		}
+	};
+	tetherFrame = window.requestAnimationFrame(step);
+}
+
+function settle(
+	nextSession: Session,
+	message: string,
+	engagement: LegalPull | null = null,
+): void {
 	window.clearTimeout(settleTimer);
+	clearTetherAnimation();
 	session.value = nextSession;
 	announcement.value = message;
-	activeDirection.value = null;
+	selectedDirection.value = null;
+	engagedPull.value = engagement;
+	const settleDelay = window.matchMedia("(prefers-reduced-motion: reduce)")
+		.matches
+		? 0
+		: TRANSITION_MS;
+	if (engagement) animateTether(engagement, settleDelay);
 	settleTimer = window.setTimeout(() => {
 		session.value = completeAnimation(session.value);
+		engagedPull.value = null;
+		clearTetherAnimation();
 		saveBestPulls(session.value.bestPulls);
-	}, TRANSITION_MS);
+	}, settleDelay);
 }
 
 function walkTo(tile: Position): void {
+	selectedDirection.value = null;
 	if (session.value.phase !== "READY") return;
 	if (isAt(session.value.state.player, tile)) {
 		announcement.value = "You are already standing there.";
@@ -186,11 +248,12 @@ function walkTo(tile: Position): void {
 	}
 	settle(
 		result.session,
-		`Standing at column ${tile.x + 1}, row ${tile.y + 1}.`,
+		`Standing at column ${tile.x + 1}, row ${tile.y + 1}. Select a highlighted box to preview its pull.`,
 	);
 }
 
 function walkDirection(direction: Direction): void {
+	selectedDirection.value = null;
 	if (session.value.phase !== "READY") return;
 	const delta = deltaByDirection[direction];
 	walkTo({
@@ -199,36 +262,60 @@ function walkDirection(direction: Direction): void {
 	});
 }
 
-function pullDirection(direction: Direction): void {
+function selectPull(direction: Direction): void {
 	if (session.value.phase !== "READY") return;
 	const option = pullOptions.value[direction];
+	if (option.kind !== "LEGAL") {
+		selectedDirection.value = null;
+		announcement.value = rejectionMessage(option.reason);
+		return;
+	}
+	selectedDirection.value = direction;
+	announcement.value =
+		`Box selected at column ${option.target.x + 1}, row ${option.target.y + 1}. ` +
+		`It will stop at column ${option.destination.x + 1}, row ${option.destination.y + 1}. Press Pull, Enter, or Space.`;
+}
+
+function pullSelected(): void {
+	if (session.value.phase !== "READY") return;
+	const direction = selectedDirection.value;
+	const option = selectionPreview.value;
+	if (!direction || !option) {
+		announcement.value = "Select a highlighted box before pulling.";
+		return;
+	}
 	const result = pull(session.value, direction);
 	if (result.kind === "REJECTED") {
+		selectedDirection.value = null;
 		announcement.value = rejectionMessage(result.reason);
 		return;
 	}
-	const destination = option.kind === "LEGAL" ? option.destination : undefined;
-	const message = destination
-		? `Box pulled to column ${destination.x + 1}, row ${destination.y + 1}.`
-		: "Box pulled.";
-	settle(result.session, message);
+	settle(
+		result.session,
+		`Box pulled to column ${option.destination.x + 1}, row ${option.destination.y + 1}.`,
+		option,
+	);
 }
 
 function undoLastPull(): void {
 	if (isSettling.value || !hasHistory.value) return;
 	session.value = undo(session.value);
-	activeDirection.value = null;
+	selectedDirection.value = null;
+	clearTetherAnimation();
+	engagedPull.value = null;
 	announcement.value = "Last pull undone. Your firing position was restored.";
 }
 
 function restartLevel(): void {
 	if (isSettling.value) return;
 	window.clearTimeout(settleTimer);
+	clearTetherAnimation();
 	session.value =
 		session.value.phase === "WON"
 			? replay(session.value)
 			: reset(session.value);
-	activeDirection.value = null;
+	selectedDirection.value = null;
+	engagedPull.value = null;
 	announcement.value = "Room reset. Your best score is safe.";
 }
 
@@ -250,7 +337,7 @@ function closeGuide(): void {
 function rejectionMessage(reason: string): string {
 	switch (reason) {
 		case "NO_TARGET":
-			return "No box is visible in that direction.";
+			return "No selectable box is visible.";
 		case "BLOCKED":
 			return "The pillar blocks the tether.";
 		case "ADJACENT":
@@ -297,6 +384,23 @@ function handleKeydown(event: KeyboardEvent): void {
 		openGuide();
 		return;
 	}
+	if (event.key === "Escape") {
+		if (selectedDirection.value) {
+			event.preventDefault();
+			selectedDirection.value = null;
+			announcement.value = "Box selection cancelled.";
+		}
+		return;
+	}
+	if (
+		(event.key === "Enter" || event.key === " ") &&
+		document.activeElement instanceof HTMLElement &&
+		document.activeElement.classList.contains("box-target")
+	) {
+		event.preventDefault();
+		pullSelected();
+		return;
+	}
 	if (event.key === "z" || event.key === "Z") {
 		event.preventDefault();
 		undoLastPull();
@@ -325,11 +429,7 @@ function handleKeydown(event: KeyboardEvent): void {
 	const direction = directionByKey[event.key];
 	if (!direction) return;
 	event.preventDefault();
-	if (event.shiftKey) {
-		pullDirection(direction);
-	} else {
-		walkDirection(direction);
-	}
+	walkDirection(direction);
 }
 
 onMounted(() => {
@@ -339,6 +439,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	window.removeEventListener("keydown", handleKeydown);
 	window.clearTimeout(settleTimer);
+	clearTetherAnimation();
 });
 </script>
 
@@ -383,7 +484,7 @@ onBeforeUnmount(() => {
 					<div class="demo-box demo-box-b"></div>
 					<div class="demo-box demo-box-c"></div>
 				</div>
-				<div class="entry-controls" aria-label="Keyboard controls">
+				<div class="entry-controls" aria-label="Game controls">
 					<div class="entry-control">
 						<span>Walk</span>
 						<strong><kbd>↑ ↓ ← →</kbd></strong>
@@ -391,11 +492,11 @@ onBeforeUnmount(() => {
 					</div>
 					<div class="entry-control entry-control-pull">
 						<span>Pull</span>
-						<strong><kbd>Shift</kbd><i>+</i><kbd>↑</kbd></strong>
-						<small>Shift + any direction</small>
+						<strong>Select box</strong>
+						<small>then choose Pull</small>
 					</div>
 				</div>
-				<p class="entry-note">Click controls are available in the room.</p>
+				<p class="entry-note">Select highlighted boxes to preview their fixed destination.</p>
 			</div>
 		</div>
 	</section>
@@ -449,8 +550,8 @@ onBeforeUnmount(() => {
 				</header>
 
 				<p id="guide-summary" class="guide-summary">
-					Walk to an open tile, then pull the first visible box toward you.
-					Arrange all three boxes into an L.
+					Walk to an open tile, select a highlighted box to preview its fixed
+					destination, then explicitly Pull it toward you. Arrange all three boxes into an L.
 				</p>
 
 				<ol class="guide-steps">
@@ -460,7 +561,7 @@ onBeforeUnmount(() => {
 					</li>
 					<li>
 						<span>02</span>
-						<p><strong>Pull toward you.</strong> The box stops on the tile beside you.</p>
+						<p><strong>Select a box.</strong> Its laser and exact destination appear before you pull.</p>
 					</li>
 					<li>
 						<span>03</span>
@@ -470,7 +571,7 @@ onBeforeUnmount(() => {
 
 				<div class="guide-shortcuts" aria-label="Keyboard shortcuts">
 					<p><span>Walk</span><kbd>Arrows</kbd><small>or WASD</small></p>
-					<p><span>Pull</span><kbd>Shift</kbd><i>+</i><kbd>Arrow</kbd></p>
+					<p><span>Pull</span><kbd>Enter</kbd><small>or Space on a selected box</small></p>
 					<p><span>Undo</span><kbd>Z</kbd></p>
 					<p><span>Reset</span><kbd>R</kbd></p>
 				</div>
@@ -486,8 +587,8 @@ onBeforeUnmount(() => {
 				<p class="eyebrow">Room 01 · Shape study</p>
 				<h1 id="level-title">Verified<br /><em class="game-title-emphasis">enclosure</em></h1>
 				<p class="lede">
-					Walk anywhere you can reach. Pull the first box in sight toward you,
-					until all three make an L.
+					Walk anywhere you can reach. Select a visible box to preview its fixed
+					destination, then Pull until all three make an L.
 				</p>
 
 				<div class="instruction-list" aria-label="How to play">
@@ -501,8 +602,8 @@ onBeforeUnmount(() => {
 					<div>
 						<span class="step-number">02</span>
 						<p>
-							<strong>Pull toward you.</strong> Choose a direction below, or hold Shift
-							while pressing a direction.
+							<strong>Select, then Pull.</strong> Choose a highlighted box to preview
+							its exact destination before confirming Pull.
 						</p>
 					</div>
 					<div>
@@ -524,32 +625,30 @@ onBeforeUnmount(() => {
 						:class="{ 'is-settling': isSettling }"
 						aria-label="Eight by eight Tether board"
 					>
-						<button
+						<div
 							v-for="tile in tiles"
 							:key="positionKey(tile)"
-							type="button"
 							class="board-cell"
 							:class="{
 								'is-reachable': isReachable(tile) && !isOccupied(tile),
 								'is-current': isAt(session.state.player, tile),
-								'is-destination': preview && isAt(preview.destination, tile),
 							}"
-							:disabled="session.phase !== 'READY' || !isReachable(tile) || isOccupied(tile)"
-							:aria-label="tileLabel(tile)"
+							aria-hidden="true"
 							@click="walkTo(tile)"
-						></button>
+						></div>
 
 						<svg
-							v-if="preview"
+							v-if="visibleTether"
 							class="tether-preview"
+							:class="{ 'is-engaged': isEngagedTether }"
 							viewBox="0 0 8 8"
 							aria-hidden="true"
 						>
 							<line
 								:x1="session.state.player.x + 0.5"
 								:y1="session.state.player.y + 0.5"
-								:x2="preview.target.x + 0.5"
-								:y2="preview.target.y + 0.5"
+								:x2="(tetherEndpoint ?? visibleTether.target).x + 0.5"
+								:y2="(tetherEndpoint ?? visibleTether.target).y + 0.5"
 							></line>
 						</svg>
 
@@ -566,12 +665,38 @@ onBeforeUnmount(() => {
 							v-for="(box, index) in session.state.boxes"
 							:key="`box-${index}`"
 							class="piece box"
-							:class="{ 'is-target': preview && isAt(preview.target, box) }"
+							:class="{
+								'is-target':
+									(selectionPreview && isAt(selectionPreview.target, box)) ||
+									(isEngagedTether && engagedPull && isAt(engagedPull.destination, box)),
+							}"
 							:style="positionStyle(box)"
 							aria-hidden="true"
 						>
 							<span class="box-face"></span>
 						</div>
+						<div
+							v-if="selectionPreview"
+							class="piece box-ghost"
+							:style="positionStyle(selectionPreview.destination)"
+							aria-hidden="true"
+						></div>
+						<button
+							v-for="selection in legalSelections"
+							:key="`box-target-${selection.direction}`"
+							type="button"
+							class="piece box-target"
+							:class="{
+								'is-selectable': session.phase === 'READY',
+								'is-selected':
+									selectedDirection === selection.direction &&
+									selectionPreview !== undefined,
+							}"
+							:style="positionStyle(selection.pull.target)"
+							:aria-label="boxTargetLabel(selection)"
+							@focus="selectPull(selection.direction)"
+							@click="selectPull(selection.direction)"
+						></button>
 						<div
 							class="piece player"
 							:style="positionStyle(session.state.player)"
@@ -593,41 +718,28 @@ onBeforeUnmount(() => {
 						</div>
 					</div>
 
-					<div class="pull-controls" aria-label="Pull a box">
+					<div v-if="selectionPreview" class="pull-controls" aria-label="Selected box pull">
 						<div class="pull-copy">
-							<span>Tether controls</span>
-							<strong>Pull a box</strong>
-							<p>The first visible box in that direction stops beside you.</p>
+							<span>Tether control</span>
+							<strong>
+								Box {{ selectionPreview.target.x + 1 }}, {{ selectionPreview.target.y + 1 }}
+							</strong>
+							<p>
+								Fixed destination: column {{ selectionPreview.destination.x + 1 }}, row
+								{{ selectionPreview.destination.y + 1 }}.
+							</p>
 						</div>
-						<div class="direction-pad">
-							<span class="pull-core" aria-hidden="true">Pull</span>
-							<button
-								v-for="direction in DIRECTIONS"
-								:key="direction"
-								type="button"
-								class="direction-button"
-								:class="[
-									`direction-${direction.toLowerCase()}`,
-									{ 'has-target': pullOptions[direction].kind === 'LEGAL' },
-								]"
-								:disabled="session.phase !== 'READY'"
-								:aria-label="`Pull ${direction}`"
-								@mouseenter="activeDirection = direction"
-								@mouseleave="activeDirection = null"
-								@focus="activeDirection = direction"
-								@blur="activeDirection = null"
-								@click="pullDirection(direction)"
-							>
-								<span class="direction-arrow" aria-hidden="true">{{
-									{ N: "↑", E: "→", S: "↓", W: "←" }[direction]
-								}}</span>
-								<small class="direction-key">{{ direction }}</small>
-							</button>
-						</div>
-						<div class="keyboard-legend">
-							<span><b>Walk</b><kbd>Arrows</kbd><small>or WASD</small></span>
-							<span><b>Pull</b><kbd>Shift</kbd><i>+</i><kbd>Arrow</kbd></span>
-						</div>
+						<button
+							type="button"
+							class="pull-confirm"
+							:disabled="session.phase !== 'READY'"
+							:aria-label="
+								`Pull selected box to column ${selectionPreview.destination.x + 1}, row ${selectionPreview.destination.y + 1}`
+							"
+							@click="pullSelected"
+						>
+							Pull
+						</button>
 					</div>
 
 					<div class="utility-controls">
