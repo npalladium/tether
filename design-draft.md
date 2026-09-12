@@ -489,3 +489,101 @@ why a firing position is unavailable, and encounter meaningful ordering choices.
 Solver results establish reachability and move counts; playtests establish
 whether those choices are readable and engaging. Reconsider the movement model
 only if those experiments expose a specific limitation.
+
+## 2.9 Formal methods and constraint-based exploration
+
+Use these tools to investigate sequences, reachability, and teaching requirements,
+not as prerequisites for the prototype. Start with an executable reference
+resolver and exhaustive graph analysis. Picat and SMT counterexample searches
+are more immediately useful here than a full theorem-prover development.
+
+### Level construction with explicit requirements
+
+**Candidate tool: Picat planning**, with results checked by the reference solver.
+Search for layouts satisfying requirements rather than relying only on random
+generation:
+
+- A solution exists and the minimum is exactly a chosen number of pulls.
+- A losing choice is reachable from the solvable starting position.
+- That losing choice leaves legal pulls available, despite making a win unreachable.
+- Removing a selected pillar changes solvability or the intended decision.
+- Every optimal solution requires a specified edge departure or move ordering.
+
+Distinguish “a solution demonstrates this technique” from “every optimal solution
+requires this technique.” First establish a finite optimum, then search for an
+equally short solution avoiding an explicitly defined technique predicate. A
+counterexample disproves necessity; absence establishes necessity only among
+optimal solutions, not among all solutions.
+
+Finding a length-k solution alone does not establish par k: exclude shorter
+solutions as well. Technique predicates involving move history need that history
+or a sufficient monitor state; the ordinary gameplay key alone may not capture
+them. Keep full-graph metrics and canonical shortest-solution counts in the graph
+analyser unless the planning implementation explicitly supports their semantics.
+
+### Verify player-region canonicalization
+
+**First approach: exhaustive model checking.** The load-bearing abstraction is:
+with the same boxes and level, player positions in the same reachable component
+produce identical sets of canonical one-pull successors.
+
+Check that:
+
+- Equivalent starting positions have identical successor-key sets.
+- A successor's region is computed from the actual firing tile after the pull.
+- Reconstructed solutions can be replayed, including every intervening walk.
+- Canonicalization preserves minimum pull distance compared with an uncollapsed
+  reference search in which walking costs zero and pulling costs one.
+
+An error here can corrupt par, solvability, and solution counts even when every
+individual pull is legal. This merits more attention than proving the small
+bounding-box win predicate in isolation.
+
+### Challenge movement invariants
+
+**Candidate tool: Z3.** Encode a valid board and one legal pull, then ask for a
+counterexample to each property:
+
+- The destination is adjacent to the player.
+- The resulting state remains in bounds and has no overlapping entities.
+- No new box adjacency is created along the movement axis.
+- A moved box cannot gain membership of an outer edge.
+- Direct endpoint calculation agrees with sliding toward the first blocker.
+
+Keep board dimensions, pillar behaviour, and validity assumptions explicit.
+A bounded result covers the encoded domain, not arbitrary board sizes. Repeat
+these checks if targeting or movement rules change; counterexamples identify
+which derived laws must change with them.
+
+### Reverse construction
+
+**Candidate tools: Prolog with finite-domain constraints, or Picat.** Represent
+movement as a relation:
+
+```
+legalTransition(level, before, firingTile, direction, after)
+```
+
+The relation includes reachable walking to the firing tile, the forward pull,
+and the resulting player position—not just box coordinates. Query genuine
+predecessors of a solved position and verify their forward witnesses. Exploring
+sequences requires tabling or explicit visited-state handling because cycles
+are possible; ordinary forward pulls are not reverse-scramble operations.
+
+### Adoption order and first experiment
+
+1. Establish the reference resolver and graph analyser.
+2. Check region equivalence and replay witnesses on finite boards.
+3. Try Picat for levels with explicit teaching requirements.
+4. Use SMT counterexample searches when changing rules.
+
+Defer Lean/Coq unless the implementation or proof obligations justify them.
+A proof about a separately handwritten model does not automatically verify the
+game. Cross-check planner and constraint-model results against the executable
+reference to detect model drift.
+
+The first construction experiment: find a small solvable board where every
+optimal solution requires a specified ordering, but another reachable choice
+enters an unsolvable region that still contains legal pulls. Verify both claims
+with the full graph. Whether players find that losing choice tempting—and the
+lesson understandable—remains a playtesting question, not a solver predicate.
