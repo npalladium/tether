@@ -96,19 +96,21 @@ describe("session commands", () => {
 		});
 	});
 
-	it("reset and replay clear pull history without erasing the best score", () => {
+	it("locks reset during animation, then clears history without erasing the best", () => {
 		const level = parseLevel(openLevel);
 		const initial = beginSession(level, 4);
 		const sliding = accepted(pull(initial, "E")).session;
 
-		for (const restarted of [reset(sliding), replay(sliding)]) {
-			expect(restarted).toMatchObject({
-				phase: "READY",
-				state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
-				history: [],
-			});
-			expect(restarted.bestPulls).toBe(4);
-		}
+		expect(reset(sliding)).toBe(sliding);
+		expect(replay(sliding)).toBe(sliding);
+
+		const restarted = reset(completeAnimation(sliding));
+		expect(restarted).toMatchObject({
+			phase: "READY",
+			state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
+			history: [],
+			bestPulls: 4,
+		});
 	});
 });
 
@@ -129,6 +131,14 @@ describe("session evaluation", () => {
 
 		expect(won.phase).toBe("WON");
 		expect(won.bestPulls).toBe(1);
+
+		const replayed = replay(won);
+		expect(replayed).toMatchObject({
+			phase: "READY",
+			state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
+			history: [],
+			bestPulls: 1,
+		});
 
 		const restored = undo(won);
 		expect(restored.phase).toBe("READY");

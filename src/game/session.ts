@@ -117,11 +117,13 @@ export function undo(session: Session): Session {
 }
 
 export function reset(session: Session): Session {
+	if (session.phase !== "READY" && session.phase !== "NO_PULLS") return session;
 	return beginSession(session.level, session.bestPulls);
 }
 
 export function replay(session: Session): Session {
-	return reset(session);
+	if (session.phase !== "WON") return session;
+	return beginSession(session.level, session.bestPulls);
 }
 
 function initialState(level: Level): GameState {
