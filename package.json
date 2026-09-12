@@ -13,15 +13,23 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"mutation": "stryker run"
+		"mutation": "stryker run",
+		"cli": "tsx src/cli/run.ts"
 	},
 	"packageManager": "pnpm@10.18.3",
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.13",
 		"@stryker-mutator/core": "^10.0.0",
+		"@types/node": "^22.20.2",
+		"@vitejs/plugin-vue": "^6.0.8",
 		"fast-check": "^4.10.0",
+		"tsx": "^4.23.13",
 		"typescript": "^7.0.2",
 		"vite": "^8.3.0",
 		"vitest": "^5.0.0"
+	},
+	"dependencies": {
+		"@stricli/core": "^1.3.0",
+		"vue": "^3.5.42"
 	}
 }
