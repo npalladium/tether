@@ -1,0 +1,16 @@
+{
+	"$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+	"mutate": ["src/game/**/*.ts", "!src/**/*.test.ts"],
+	"ignorePatterns": ["tsconfig.json"],
+	"testRunner": "command",
+	"commandRunner": {
+		"command": "pnpm test"
+	},
+	"coverageAnalysis": "off",
+	"reporters": ["html", "clear-text", "progress"],
+	"thresholds": {
+		"high": 80,
+		"low": 60,
+		"break": 60
+	}
+}
