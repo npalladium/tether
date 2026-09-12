@@ -45,6 +45,7 @@ describe("session commands", () => {
 			reason: "INPUT_LOCKED",
 			session: walking,
 		});
+		expect(undo(walking)).toBe(walking);
 		expect(completeAnimation(walking).phase).toBe("READY");
 	});
 
@@ -54,6 +55,28 @@ describe("session commands", () => {
 		expect(pull(initial, "N")).toEqual({
 			kind: "REJECTED",
 			reason: "NO_TARGET",
+			session: initial,
+		});
+		expect(completeAnimation(initial)).toBe(initial);
+		expect(undo(initial)).toBe(initial);
+	});
+
+	it("rejects a destination outside the player's reachable region", () => {
+		const level = parseLevel({
+			id: "partitioned-walk",
+			pillars: Array.from({ length: 8 }, (_, y) => ({ x: 1, y })),
+			startPlayer: { x: 0, y: 0 },
+			startBoxes: [
+				{ x: 0, y: 4 },
+				{ x: 3, y: 3 },
+				{ x: 5, y: 5 },
+			],
+		});
+		const initial = beginSession(level);
+
+		expect(walk(initial, { x: 2, y: 0 })).toEqual({
+			kind: "REJECTED",
+			reason: "UNREACHABLE",
 			session: initial,
 		});
 	});
@@ -131,6 +154,11 @@ describe("session evaluation", () => {
 
 		expect(won.phase).toBe("WON");
 		expect(won.bestPulls).toBe(1);
+
+		const unbeaten = completeAnimation(
+			accepted(pull(beginSession(level, 0), "E")).session,
+		);
+		expect(unbeaten.bestPulls).toBe(0);
 
 		const replayed = replay(won);
 		expect(replayed).toMatchObject({

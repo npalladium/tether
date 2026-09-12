@@ -1,3 +1,5 @@
+import { isInBounds } from "./board";
+
 export type Position = Readonly<{
 	x: number;
 	y: number;
@@ -45,13 +47,6 @@ const clonePosition = (position: Position): Position =>
 	Object.freeze({ x: position.x, y: position.y });
 
 const key = (position: Position): string => `${position.x},${position.y}`;
-const inBounds = (position: Position): boolean =>
-	Number.isInteger(position.x) &&
-	Number.isInteger(position.y) &&
-	position.x >= 0 &&
-	position.x < 8 &&
-	position.y >= 0 &&
-	position.y < 8;
 
 export function parseLevel(definition: LevelDefinition): Level {
 	if (definition.startBoxes.length !== 3) {
@@ -72,7 +67,7 @@ export function parseLevel(definition: LevelDefinition): Level {
 		...definition.startBoxes,
 		...definition.pillars,
 	];
-	if (positions.some((position) => !inBounds(position))) {
+	if (positions.some((position) => !isInBounds(position))) {
 		throw new LevelValidationError(
 			"OUT_OF_BOUNDS",
 			"All coordinates must be on the board",

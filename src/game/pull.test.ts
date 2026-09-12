@@ -88,6 +88,26 @@ describe("pull resolution", () => {
 		});
 		expect(before).toEqual(stateFor(baseDefinition));
 	});
+
+	it("resolves a westward pull against the coordinate axis", () => {
+		const definition = {
+			...baseDefinition,
+			startPlayer: { x: 7, y: 7 },
+			startBoxes: [
+				{ x: 4, y: 7 },
+				{ x: 2, y: 2 },
+				{ x: 3, y: 3 },
+			],
+		} satisfies LevelDefinition;
+
+		expect(
+			resolvePull(parseLevel(definition), stateFor(definition), "W"),
+		).toEqual({
+			kind: "LEGAL",
+			target: { x: 4, y: 7 },
+			destination: { x: 6, y: 7 },
+		});
+	});
 });
 
 describe("terminal board rules", () => {
@@ -125,6 +145,17 @@ describe("terminal board rules", () => {
 					{ x: 2, y: 2 },
 					{ x: 3, y: 2 },
 					{ x: 4, y: 2 },
+				],
+				pulls: 0,
+			}),
+		).toBe(false);
+		expect(
+			isWon({
+				player: { x: 0, y: 0 },
+				boxes: [
+					{ x: 2, y: 2 },
+					{ x: 2, y: 2 },
+					{ x: 3, y: 3 },
 				],
 				pulls: 0,
 			}),

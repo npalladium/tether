@@ -43,6 +43,18 @@ describe("level parsing", () => {
 			},
 		],
 		["OUT_OF_BOUNDS", { ...validLevel, startPlayer: { x: -1, y: 0 } }],
+		[
+			"OUT_OF_BOUNDS",
+			{
+				...validLevel,
+				startBoxes: [
+					{ x: 8, y: 1 },
+					validLevel.startBoxes[1],
+					validLevel.startBoxes[2],
+				],
+			},
+		],
+		["OUT_OF_BOUNDS", { ...validLevel, pillars: [{ x: 4, y: 4.5 }] }],
 		["OVERLAP", { ...validLevel, startPlayer: validLevel.startBoxes[0] }],
 		["OVERLAP", { ...validLevel, pillars: [validLevel.startBoxes[0]] }],
 		[
