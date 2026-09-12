@@ -1,5 +1,5 @@
 import "./style.css";
-import { BOARD_SIZE } from "./game/board";
+import { BOARD_SIZE } from "./game";
 
 const app = document.querySelector<HTMLElement>("#app");
 
@@ -15,6 +15,6 @@ app.innerHTML = `
       Pull three boxes across an ${BOARD_SIZE} × ${BOARD_SIZE} room and arrange
       them into an L.
     </p>
-    <p class="status">Tooling is ready. The board comes next.</p>
+    <p class="status">Single-level engine ready for a renderer.</p>
   </section>
 `;
