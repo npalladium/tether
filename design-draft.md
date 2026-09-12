@@ -1,9 +1,10 @@
 # Tether — Design Document
 
 A grid puzzle about pulling boxes along ranks and files until they form a shape.
-Movement model is closer to Ricochet Robots than Sokoban.
+The player chooses the stopping position; access to that position is the puzzle.
 
-Status: pre-prototype. Design choices are left open and marked **[OPEN]**.
+Status: pre-prototype. The prototype uses opaque pillars and unlimited undo.
+Unsettled design choices are marked **[OPEN]**; content depth needs playtesting.
 
 ---
 
@@ -12,215 +13,252 @@ Status: pre-prototype. Design choices are left open and marked **[OPEN]**.
 ## 1.1 Premise
 
 An 8×8 room. The player, three boxes, some pillars. The player fires a tether
-along a rank or file; the first box in that line slides toward the player until
-it hits something. Win by arranging the boxes into an L-tromino anywhere on the
-grid, in any rotation.
+along a rank or file; the first unobstructed box slides toward the player and
+stops on the adjacent tile. The player stays put until walking again. Win by
+arranging the boxes into an L-tromino anywhere on the grid, in any rotation.
 
 There are no marked target tiles. The goal is a *shape*, not a destination.
+The central question is: can I reach the firing position that produces the
+placement I need, and will that placement preserve access for the next move?
 
 ## 1.2 Entities
 
-| Entity | Blocks movement | Blocks tether line | Stops a sliding box |
-|---|---|---|---|
-| Wall (out of bounds) | yes | yes | yes, flush |
-| Pillar | yes | **[OPEN]** | yes, flush |
-| Box | yes | yes (it *is* the target) | yes, flush |
-| Player | — | — | yes, flush — but then vacates |
+| Entity | Blocks walking | Effect on a tether shot |
+|---|---|---|
+| Wall (out of bounds) | yes | Ends the search without a target. |
+| Pillar | yes | Opaque: blocks the shot before any box beyond it. |
+| Box | yes | The first visible box is the target; boxes behind it cannot be selected. |
+| Player | — | Fires the tether and determines its target's stopping tile. |
+
+Every legal pull stops against the player. Walls and other boxes cannot become
+stopping surfaces: the path to the selected box is clear. Pillars prevent the
+shot rather than stop a successfully targeted box.
+
+Transparent pillars are outside the prototype rules. Allowing a tether through
+one would let a distant box stop against it, introducing a different placement
+mechanic—not merely a visibility option.
 
 ## 1.3 Core loop
 
 1. Walk to a firing position (free, orthogonal, uncounted).
 2. Fire the tether in one of four directions.
-3. The first box in that line slides toward you and stops flush against the
-   first blocker.
+3. The first visible box slides to the tile immediately beside you on that ray.
 4. Repeat until the three boxes form an L.
 
-Only pulls are counted. Walking is free.
+Only successful, moving pulls are counted. Walking is free. A shot with no
+visible target, or with an already-adjacent target, changes nothing.
 
 ## 1.4 Derived laws
 
-These are not extra rules — they fall out of the above — but they are
-non-obvious, load-bearing, and the entire skill ceiling. They must be taught
-explicitly.
+These follow from the movement rule. The tutorial should make their
+consequences legible rather than present them as additional restrictions.
 
-**Law 1 — Collinear pulls only separate.**
-If two boxes share a file, any tether fired down that file grabs the nearer one
-and drags it *away* from the further one. Firing from the far side just moves
-the other box. Two boxes can never be made adjacent along the axis they are
-pulled on.
+**Law 1 — Pulls cannot create adjacency along their movement axis.**
+A box cannot become adjacent to another box along the axis it is pulled on.
+An intervening box would have been selected first, and the player occupies the
+square beyond the moving box's destination.
 
-*Consequence:* every adjacency in the final shape must be built **cross-axis**.
-A box becomes vertically adjacent to another only by arriving horizontally, and
-vice versa.
+Collinear boxes can become closer if the player stands between them, but they
+cannot become adjacent that way. Every *new* box adjacency must be built
+cross-axis: a horizontal arrival can create vertical adjacency, and vice versa.
+An adjacency may already exist in the starting layout.
 
-**Law 2 — The player is the only loose stopper.**
-Walls, pillars and boxes stop a box flush and stay put. The player stops a box
-flush and then walks away, leaving a one-tile gap. This "backstop" is the *only*
-way to park a box on an arbitrary open tile with nothing supporting it.
+**Law 2 — Every pull is a player-positioned stop.**
+To park a box on an open tile, stand one tile beyond that destination on the
+pull axis. The firing position must be reachable, and the target must be visible.
+The player can walk away afterward; the box remains where it was placed.
 
-*Consequence:* without backstopping, every box comes to rest against something.
-The interior of the board is unstable; walls are attractors.
+This is the basic move, not a separate backstop technique unlocked later. Other
+boxes and pillars shape access and targeting; they do not provide collision
+scaffolding. The L cannot be completed by pulling its corner into two neighbours.
+There is no assumed difficulty ordering between an L and an I.
 
-**Law 3 — The L is self-scaffolding; the I is not.**
-The L-tromino's corner box touches both others orthogonally, so a single
-cross-axis pull can collide it into one box and land it flush against the
-second. The I-tromino (three in a row) requires an external blocker for each
-piece. This asymmetry is a free difficulty gradient: the I is the natural
-near-miss state.
+**Law 3 — Leaving an outer edge is irreversible.**
+A box can leave an outer row or column, but cannot return to that edge from the
+interior. Arriving there along the perpendicular axis would require the player
+to stand outside the board. Moving along an edge remains possible.
+
+Boundary membership can only be lost. Walls constrain placement; they are not
+attractors. Leaving an edge is a commitment whose usefulness as a teaching
+concept still needs playtesting.
 
 ## 1.5 Failure
 
-The player can be sealed in. All four orthogonal neighbours blocked means no
-walking, and no line of sight past adjacent boxes means no tether either — a
-hard lock, not a soft one. Realistically one configuration: the L built into a
-board corner with the player in the crook.
+Two different conditions matter:
 
-Rare enough that it will read as a gotcha unless a level is built specifically
-to demonstrate it.
+- **No legal pulls:** no firing position in the player's reachable region can
+  produce a moving pull. Walking may still be possible. A local enumeration is
+  sufficient to detect this; no solution search is needed.
+- **Unsolvable:** legal pulls may remain, but no sequence can reach an L. This
+  requires a solver or a lookup in an analysed state graph.
 
-**[OPEN] Handling:**
+For the prototype, show an advisory—"No pulls remain. Undo or reset."—only for
+the first condition. Never force a reset. Do not label a position unsolvable
+based on the local check.
 
-| Option | Trade-off |
-|---|---|
-| Silent lock | Reads as a bug. |
-| Advisory detector — "no moves remain, undo?" | Honest, gives the trap its drama. Needs a solver at runtime. |
-| Hard fail + forced reset | Punishing; conflicts with undo-friendly design. |
+Winning is checked first. A completed L with the player trapped in its crook
+is still a win; escaping afterward is not part of the goal. Non-winning traps
+are possible when boxes and pillars seal off the player; see §1.8.
 
-## 1.6 Verbs
+**[OPEN] Additional assistance:** whether to offer solver-backed unsolvability
+warnings or hints. Neither is required for the initial prototype.
 
-Three: **pull**, **backstop**, **block with pillar**. Enough for roughly 20–30
-levels before repetition.
+## 1.6 Verbs and scope
 
-**[OPEN] Optional fourth verb** — only if scope grows past ~40 levels:
+Two player actions: **walk** and **pull**. Player-positioned stopping is part of
+pulling; a pillar is a static obstacle, not a separate verb.
 
-| Option | Trade-off |
-|---|---|
-| Junk boxes (extra, not part of the goal) | Cheapest. Pure colliders and decoys. Lets adjacency be built without a backstop. Slight goal ambiguity — which three count? |
-| Grab-through (tether passes the first box, takes the second) | Doubles strategic space without touching the core. Harder to read on screen; needs a distinct input. |
-| Anchored pull (player is immovable, box drags player instead) | Novel, but inverts the collision intuition players just learned. |
+First test whether placement, cross-axis adjacency, and reachability combine
+into distinct puzzles. Free walking and flexible stopping positions may make
+open boards too easy; carefully authored bottlenecks may supply the depth.
+There is no established level-count ceiling or requirement to add more verbs.
+
+Additional boxes, selective targeting, player-dragging, and transparent pillars
+are outside the prototype. Revisit the movement model only if a small set of
+hand-authored boards exposes a specific limitation worth addressing.
 
 ## 1.7 Scoring and assistance
 
-- Par = minimum pulls, computed by solver. Show par / current / best.
-- **Undo is mandatory, not a nicety.** There is no push, so most states are
-  one-way.
+- Par = minimum pulls, computed by solver. Show par / current / best when par
+  is available; an unsolved authoring draft has no assigned par.
+- Unlimited undo. Undo restores the position and counter before the last
+  successful pull, including the player's firing position. Walking alone does
+  not add history entries.
+- Reset starts a fresh attempt and clears undo history.
+- Best is the lowest completed pull count for that level revision. It survives
+  undo, reset, replay, and subsequent sessions.
 - No timer.
 
-**[OPEN] Undo depth:** unlimited (safest, encourages probing over planning) vs.
-limited-N (preserves the weight of a move, risks frustration).
+Irreversible placements make undo important. Probing is allowed; whether players
+prefer probing to planning is a playtesting question, not a reason to limit undo.
 
 ## 1.8 Teaching order
 
-The tutorial *is* the design. Each level introduces exactly one thing.
+Use three boxes and the same L goal from the first lesson. Each level should
+emphasise one new idea, even though the underlying constraints act together.
 
-1. Two boxes, one wall. One pull. Teaches flush stop.
-2. Forces a cross-axis pull. Teaches Law 1.
-3. First backstop — a box must land on open floor. Teaches Law 2.
-4. First pillar used as a line-of-sight blocker.
-5. Reachability level — the firing tile you need gets sealed off if you move in
-   the wrong order.
-6. The crook trap, in a board corner, unavoidable on the naive line.
+1. A one-pull L. Teaches pulling to the player's adjacent tile.
+2. A new adjacency built cross-axis. Teaches Law 1.
+3. Leaving an outer edge. Teaches an irreversible placement and undo.
+4. An opaque pillar. Teaches blocked targeting and walking to another angle.
+5. Reachability. A required firing tile is lost if boxes move in the wrong order.
+6. A non-winning enclosure. Teaches the no-pulls advisory and undo.
 
-Law 1 should teach itself on first contact: when a player attempts a collinear
-pull, animate the separation as a deliberate beat rather than rejecting the
-input silently.
+Animate actual movement on legal pulls. If a lesson highlights collinear
+separation, classify it from the before/after box positions; separation occurs
+on the legal path. An adjacent-target rejection means "no room to move," not
+"collinear boxes always separate."
+
+**Verified enclosure example:** normal 8×8 board, zero-based `(x, y)` coordinates;
+x increases east, y increases south. Player `(0,0)`, boxes `(1,0)`, `(2,0)`,
+`(2,3)`, and one pillar `(3,1)`. All other tiles are empty.
+
+A losing sequence:
+
+1. Stand at `(1,2)` and pull north: `(1,0)` → `(1,1)`.
+2. Stand at `(2,1)` and pull south: `(2,3)` → `(2,2)`.
+
+The player is surrounded by three boxes and the pillar. The boxes are not an L,
+and no walking or legal pull remains.
+
+A winning alternative after the same first pull:
+
+2. Stand at `(0,0)` and pull east: `(2,0)` → `(1,0)`.
+3. Stand at `(2,0)` and pull south: `(2,3)` → `(2,1)`.
+
+Every firing position in both sequences is reachable. This establishes a
+solvable starting position and a reachable trap, not that the losing choice is
+intuitive or that three pulls is the minimum. Those are separate checks.
 
 ## 1.9 Difficulty
 
-Difficulty does **not** live in the box logic — the state space is small and
-most boards fall in two or three pulls. It lives in:
+Working hypothesis: difficulty comes from coordinating shape construction with
+access to firing positions. Pillars block both routes and tether rays; moving
+boxes can partition the floor. Open boards may offer too many easy placements.
 
-- **Pillars as line-of-sight blockers**, pruning firing positions.
-- **Player pathing** — as boxes clump, the floor partitions, and "can I reach
-  the tile I need to fire from" becomes the real constraint.
+Candidate signals—not substitutes for playtesting:
 
-Two measurable signals, both available from a full solve:
+- **Par:** the shortest solution length, not a direct measure of reasoning effort.
+- **Optimal solution count:** scarcity may help identify constrained puzzles,
+  but multiple solutions are not automatically a defect.
+- **Dead-state fraction:** the proportion of reachable states with no reachable
+  win. A large fraction may mean interesting commitments or merely frustration.
+- **Observed wrong turns:** whether players choose losing moves, notice why,
+  and recover productively with undo.
 
-- **Dead-state fraction** — proportion of reachable states from which no L can
-  still be formed. Because pulls are irreversible, this is the honest difficulty
-  metric.
-- **Greedy failure** — does a naive bot (grab nearest box, always pull toward
-  the anchor) dead-end? Levels that punish the obvious read are the good ones.
+A bot-based greedy-failure metric is deferred until its action policy and
+tie-breaking are explicit. It must not stand in for evidence of an intuitive
+human choice. No claim is made yet about typical par or sustainable level count.
 
 ## 1.10 Content
 
-**[OPEN] Level sourcing:**
+Hand-author a small prototype set and the tutorial before investing in mining.
+
+**[OPEN] Level sourcing after the prototype:**
 
 | Option | Trade-off |
 |---|---|
-| Fully hand-authored | Best quality per level. Slow. |
-| Reverse-scramble from a solved L | Guarantees solvability, but must invert the backstop (needs a recorded player position), and scrambles tend to unwind themselves. |
-| Random layout + exhaustive solver filter | Cheap, unbiased, gives all metrics free. Produces quantity, not quality. |
-| **Generate-and-mine:** random + filter, then hand-pick and hand-polish the best | Surfaces configurations you would not have thought of; keeps final quality high. Most work up front. |
+| Fully hand-authored | Direct control over teaching intent; requires iteration. |
+| Reverse construction from a solved L | Enumerate genuine predecessor states and verify each forward pull. Record player positions; ordinary forward pulls are not their own inverses. |
+| Random layout + exhaustive analysis | Produces candidates under the chosen sampling distribution, not an unbiased measure of puzzle quality. |
+| Generate-and-mine | Analyse candidates, then hand-pick and polish. Useful only once there are criteria worth mining for. |
 
-Filters, cheapest first: solvable with par 3–6 → not a D4-symmetry duplicate of
-an existing level → pillar necessity (delete each pillar; if par and optimal
-solution count are unchanged, delete it for real) → solution scarcity (≤3
-distinct optimal solutions; many-solution boards feel mushy).
+For non-tutorial candidates, par 3–6 and at most three optimal solutions are
+initial search parameters, not established quality thresholds. Reject invalid
+layouts and D4-symmetry duplicates before expensive analysis. Equivalence uses
+both box positions and the player's reachable region, not the exact walking tile.
 
-Hand-author the tutorial six and the finale regardless. "Unavoidable on the
-naive line" is a property a generator will essentially never hand you.
+Pillar removal is a proposal for review, not an automatic simplification. An
+unchanged par and optimal count can coexist with a different dead-state fraction
+or different losing choices. Reanalyse the modified layout and inspect its
+routes, solutions, and intended lesson before accepting a deletion. Recheck
+symmetry duplicates after layout changes.
 
-## 1.11 Prior art
+## 1.11 Prior art and positioning
 
-| Game | Shares | Differs |
+| Game | Useful comparison | Important difference |
 |---|---|---|
-| **Ricochet Robots** | Full-slide-until-collision movement; scanning ranks and files; parking a piece as a blocker for a later move | Competitive speed race, full reset each round — irreversibility never bites |
-| **Pukoban** (pull-only Sokoban) | Pull as the only verb | Single-tile pulls, so pull *is* the reversibility mechanic. Same verb, opposite consequence |
-| **Sokoban** | Avatar occupies the grid and blocks | Push, single-tile, marked target tiles |
-| **A Good Snowman** | Goal is a shape, anywhere; no marked targets | Push-based; shape is built by stacking |
-| **Rush Hour / Klotski** | Axis-constrained sliding against blockers | Fully reversible; no avatar |
-| **Stephen's Sausage Roll** | Player body as a critical blocker | Avatar is a pusher, not a puller; far denser verb set |
+| **Ricochet Robots** | Long orthogonal moves; scanning ranks and files | Tether chooses endpoints through player positioning, not environmental collision routing. |
+| **Pukoban** | An avatar can pull boxes | The documented variant permits both pushing and pulling, with single-tile box movement. |
+| **Sokoban** | An avatar navigates around boxes | Push-based, single-tile movement, marked target tiles. |
+| **A Good Snowman** | Spatial construction rather than delivering each piece to a marked target | Builds snowmen by pushing and stacking. |
+| **Rush Hour / Klotski** | Reasoning about constrained movement and access | No walking avatar that determines a pull endpoint. |
 
-**What is actually novel:** Law 1. No existing game has a movement verb that
-*cannot* make two pieces adjacent along its own axis. Sokoban's push does it
-trivially; Ricochet Robots doesn't care about adjacency. Requiring every
-adjacency to be built cross-axis is the original constraint here — and, not
-coincidentally, the hardest thing to teach.
+The Pukoban comparison uses the [National Taiwan University rules, pages 5–7](https://www.csie.ntu.edu.tw/~tcg/2019/hw1_spec_3ec0a4c12ab616a74a78c36a31048d31b53fee1b.pdf).
+Single-tile pulling also cannot create adjacency along its movement axis: after
+a pull, the two axial neighbours of the box are the new player tile and the
+box's just-vacated tile. Law 1 is not a claim of novelty.
 
-Player-as-blocker is not novel. Player-as-*temporary* blocker that vacates and
-leaves a gap (Law 2) is unusual and load-bearing.
+Positioning, in one line: **pull-to-player shape construction, constrained by
+where the player can still stand.** The combination is worth testing without
+claiming that no existing game has explored it.
 
-Positioning, in one line: **Ricochet Robots' movement, Sokoban's avatar,
-A Good Snowman's goal.** Those three barely overlap. The likely reason nobody
-has built it is that pull-plus-full-slide is unforgiving enough that most
-designers would add a push and land back in Sokoban.
-
-**Warnings from precedent:**
-
-- *Snakebird*, *Stephen's Sausage Roll* — irreversible states plus unlimited
-  undo reliably produce players who probe rather than plan. Their partial answer
-  is making states intricate enough that probing is slower than thinking; our
-  states are small enough that probing will usually win. Accept it rather than
-  fix it (see §1.7).
-- *Baba Is You*, *SSR* — sustain hundreds of puzzles because their verbs
-  recombine. Three verbs that do not recombine is why the ceiling here is
-  20–30 levels without the optional fourth (§1.6).
-- *Helltaker* — the tone reference. Short sliding-block puzzles where failure
-  states teach instantly and the tutorial barely explains. That is the model for
-  the collinear-separation beat (§1.8).
+*Helltaker* is a tone reference for a short, readable puzzle experience, not
+evidence for a particular difficulty curve or number of levels.
 
 ---
 
 # Part 2 — Technical Design
 
-Pseudocode only. No language or engine assumed.
+Pseudocode only. No language or engine assumed. All gameplay and solver paths
+use the same opaque-pillar pull resolver.
 
 ## 2.1 Types
 
 ```
-Vec    = { x, y }                  // also used as a direction
+Vec    = { x, y }
 Dir    = N | E | S | W
 
 Level:                             // static, immutable after load
+    id         : String            // stable identifier for this level revision
     w, h                           // 8, 8
     pillars    : Set<Vec>
     startPlayer: Vec
     startBoxes : List<Vec>
-    par        : Int
+    par        : Int?              // absent until solved offline
     title      : String?
 
-State:                             // dynamic; the whole save/undo unit
+State:                             // full gameplay snapshot
     player : Vec
     boxes  : List<Vec>
     pulls  : Int
@@ -229,184 +267,225 @@ Session:
     level   : Level
     state   : State
     history : Stack<State>
-    status  : PLAYING | WON | DEAD
+    phase   : READY | WALKING | SLIDING | EVALUATE | WON | NO_PULLS
+
+Progress:                          // persistent, outside undo snapshots
+    bestPulls : Map<LevelId, Int>
 ```
 
-**Nothing else is stored.** Occupancy, the reachable-tile set, legal firing
-tiles and the win check are all derived and recomputed on change. The board is
-64 tiles; this is free.
+Validate levels before play or search: exactly three distinct box cells; every
+entity in bounds; no box/pillar/player overlaps. An authored revision that
+changes layout or rules gets a new level id so its best score is not inherited.
 
-## 2.2 The two predicates
+Occupancy, reachable tiles, and win status are derived. Animation phase is not
+part of an undo snapshot; restored gameplay is evaluated before accepting input.
+Measure solver performance separately from these small-board runtime queries.
 
-The difference between these is Law 2, expressed in code.
+## 2.2 Occupancy and reachability
 
 ```
-solidAt(state, p):                 // stops a box AND stays there
-    return outOfBounds(p)
+solidAt(level, state, p):
+    return outOfBounds(level, p)
         or p in level.pillars
         or p in state.boxes
 
-blockerAt(state, p):               // stops a box, may not stay
-    return solidAt(state, p) or p == state.player
+reachableTiles(level, state):
+    flood-fill from state.player over tiles where not solidAt(level, state, tile)
 ```
+
+The player is the flood-fill origin, not a walking obstacle. A generic sliding
+collision predicate is unnecessary: selecting a visible target guarantees a
+clear path to the tile beside the player.
 
 ## 2.3 Pull resolution
 
 ```
-resolvePull(state, dir) -> Result:
-    step = -unit(dir)                        // box travels toward the player
-
-    // 1. find target: scan outward from the player
-    scan = state.player + unit(dir)
+resolvePull(level, state, dir) -> Result:
+    ray = unit(dir)
+    scan = state.player + ray
     loop:
-        if outOfBounds(scan):            return ILLEGAL(NO_TARGET)
-        if scan in level.pillars:
-            if PILLARS_BLOCK_LOS:        return ILLEGAL(BLOCKED)
-            else:                        scan += unit(dir); continue
-        if scan in state.boxes:          target = scan; break
-        scan += unit(dir)
+        if outOfBounds(level, scan): return ILLEGAL(NO_TARGET)
+        if scan in level.pillars:    return ILLEGAL(BLOCKED)
+        if scan in state.boxes:      break
+        scan += ray
 
-    // 2. adjacency guard
-    if manhattan(state.player, target) == 1: return ILLEGAL(ADJACENT)
+    dest = state.player + ray
+    if scan == dest:                 return ILLEGAL(ADJACENT)
+    return LEGAL(scan, dest)
 
-    // 3. slide
-    dest = target
-    while not blockerAt(state, dest + step):
-        dest += step
-
-    if dest == target:                   return ILLEGAL(NO_MOVEMENT)
-    return LEGAL(target, dest)
-```
-
-Note `PILLARS_BLOCK_LOS` is the **[OPEN]** flag from §1.2. Keep it a config
-value through prototyping.
-
-```
 applyPull(session, dir):
-    r = resolvePull(session.state, dir)
+    r = resolvePull(session.level, session.state, dir)
     if r is ILLEGAL:
-        emit(FEEDBACK, r.reason)         // no history, no counter increment
+        emit(FEEDBACK, r.reason)
         return
 
-    push(session.history, copy(session.state))
+    push(session.history, deepCopy(session.state))
     moveBox(session.state, r.target -> r.dest)
     session.state.pulls += 1
 ```
 
-Illegal pulls must never touch history and never increment the counter.
-`ILLEGAL(ADJACENT)` and a collinear no-op are where Law 1 gets taught — route
-them to distinct feedback.
+Computing the destination directly is equivalent to sliding toward the first
+blocker under these rules: that blocker is always the player. The result still
+provides both endpoints for animation.
 
-## 2.4 Win and dead checks
+Illegal pulls never touch history or the counter. Distinguish no target,
+blocked sight, and an adjacent target. Legal-move teaching effects use the
+before/after geometry, not an invented collinear no-op error.
+
+## 2.4 Win and no-pulls checks
 
 ```
 isWon(state):
     cells = state.boxes
     if count(cells) != 3: return false
     return (max.x - min.x) <= 1
-       and (max.y - min.y) <= 1          // 3 distinct cells inside a 2x2 is an L
+       and (max.y - min.y) <= 1          // validated distinct cells in a 2x2
 
-isDead(session):
-    if isWon(session.state): return false
-    for tile in reachableTiles(session.state):
+hasNoLegalPulls(level, state):
+    for tile in reachableTiles(level, state):
         for dir in [N,E,S,W]:
-            if resolvePull(withPlayerAt(session.state, tile), dir) is LEGAL:
+            if resolvePull(level, withPlayerAt(state, tile), dir) is LEGAL:
                 return false
     return true
-
-reachableTiles(state):
-    flood-fill from state.player over tiles where not solidAt(state, tile)
 ```
 
-`isDead` is exhaustive over ~64 tiles × 4 directions. Cheap enough to run every
-turn.
+`withPlayerAt` is a non-mutating view or copy; enumeration must not move the
+live player. `hasNoLegalPulls` checks at most 64 tiles × 4 directions, each with
+a ray scan. It does not establish unsolvability. Always check `isWon` first when
+choosing the visible session phase.
 
 ## 2.5 State machine
 
 ```
-BOOT -> READY
+BOOT -> beginLevel -> EVALUATE
 
 READY
-    tap floor tile, in reachableTiles   -> WALKING
-    tap direction, pull LEGAL           -> apply, then SLIDING
-    tap direction, pull ILLEGAL         -> READY  (shake + hint, no cost)
-    undo, history non-empty             -> READY  (pop into state)
-    reset                               -> READY  (state = initial)
+    tap reachable floor tile            -> move player, then WALKING
+    tap direction, pull LEGAL           -> applyPull, then SLIDING
+    tap direction, pull ILLEGAL         -> feedback, remain READY
+    undo, history non-empty             -> undo, then EVALUATE
+    reset                               -> beginLevel, then EVALUATE
 
-WALKING  -- animation complete -->  READY
-SLIDING  -- animation complete -->  EVALUATE
+WALKING -- animation complete --> READY
+SLIDING -- animation complete --> EVALUATE
 
 EVALUATE
-    isWon   -> WON
-    isDead  -> DEAD
-    else    -> READY
+    isWon                               -> WON; record best score
+    else hasNoLegalPulls                 -> NO_PULLS
+    else                                -> READY
 
-WON   -> next level | replay
-DEAD  -> undo -> READY | reset -> READY
+WON
+    undo, history non-empty             -> undo, then EVALUATE
+    replay                              -> beginLevel, then EVALUATE
+    next level                          -> beginLevel(next), then EVALUATE
+
+NO_PULLS
+    undo, history non-empty             -> undo, then EVALUATE
+    reset                               -> beginLevel, then EVALUATE
 ```
 
-WALKING and SLIDING are animation-only. The state mutation already happened on
-entry; input is locked during them; skipping the animation must be safe.
+Walking cannot change the set of available pulls from the same reachable region.
+WALKING and SLIDING are animation phases: gameplay mutation has already happened
+on entry, and input is locked during them. Skipping an animation must execute
+its completion transition, including evaluation after a pull.
 
-## 2.6 Undo
+On entering WON, persist `bestPulls[level.id] = min(previous best, state.pulls)`,
+using the current count when no previous best exists. Undo does not erase a
+previously completed score.
 
-Trivially correct, because `State` is a full snapshot and `Level` is immutable.
+## 2.6 Undo and reset
 
 ```
 undo(session):
     if empty(session.history): return
-    session.state  = pop(session.history)
-    session.status = PLAYING
+    session.state = pop(session.history)
+    session.phase = EVALUATE
+
+beginLevel(session, level):
+    session.level = level
+    session.state = State(level.startPlayer, copy(level.startBoxes), 0)
+    clear(session.history)
+    session.phase = EVALUATE
 ```
 
-Do not be tempted to store deltas.
+Snapshots own their box collections. Restoring one must not mutate the immutable
+level or another history entry. Undo is per successful pull, not per walking
+step. Reset, replay, and next-level entry clear history through `beginLevel`;
+undo after reset cannot resurrect an earlier attempt. Progress is untouched.
 
-## 2.7 Solver
+## 2.7 Solver and analysis
 
-Used offline for par and metrics; optionally at runtime for `isDead` and hints.
+Used offline for par and candidate metrics. Solver-backed hints and
+unsolvability warnings are optional extensions, not dependencies of NO_PULLS.
 
 ```
+successors(level, s):
+    for tile in reachableTiles(level, s):
+        for dir in [N,E,S,W]:
+            r = resolvePull(level, withPlayerAt(s, tile), dir)
+            if r is LEGAL:
+                s2 = deepCopy(s)
+                s2.player = tile
+                moveBox(s2, r.target -> r.dest)
+                s2.pulls += 1
+                yield s2, (tile, dir, r)
+
 solve(level):
-    start = State(level.startPlayer, level.startBoxes, 0)
-    BFS over states:
-        successors(s) =
-            for tile in reachableTiles(s):
-                for dir in [N,E,S,W]:
-                    r = resolvePull(withPlayerAt(s, tile), dir)
-                    if r is LEGAL: yield applied(s, tile, r)
-    return shortest path to any s where isWon(s)
+    start = State(level.startPlayer, copy(level.startBoxes), 0)
+    BFS from start using successors, deduplicated by stateKey
+    return a shortest path to any state where isWon(state), or UNSOLVABLE
 ```
 
-State key: `(player-region-id, sorted box positions)`. Two states with the
-player in different tiles of the *same* reachable region are identical for
-search purposes — canonicalising to a region id collapses the space
-substantially.
+State key: `(minimum reachable tile, sorted box positions)`, with a fixed
+lexicographic coordinate order. This is scoped to one immutable level. Exact
+player position and pull counter are excluded: free walking makes every tile
+in the same reachable region equivalent for search. Recompute the region after
+each pull using the *actual firing tile* as the new player's position; a box
+move can split the old region.
 
-Rough size: 3 boxes over 64 tiles is ~41k box configurations, times a small
-number of player regions. Full BFS is milliseconds. This means level quality is
-something you can *know*, not guess.
+Store a firing tile and direction with each predecessor edge so a solution can
+be replayed with reachable walks. Deduplicate successor keys per source state.
+A distinct solution means a distinct sequence of canonical state keys—not box
+identities, walking routes, or multiple inputs with the same transition.
 
-Metrics falling out of one solve:
+There are `C(64,3) = 41,664` raw box configurations before pillars and player
+regions are considered. This is a sizing input, not a runtime guarantee.
+Benchmark representative levels before deciding on runtime search.
 
-```
-par                = length of shortest solution
-optimalCount       = number of distinct shortest solutions
-deadStateFraction  = |states with no reachable win| / |reachable states|
-requiresBackstop   = every optimal solution contains a pull where
-                     the box's stopping blocker was the player
-requiresLOSBlock   = every optimal solution contains a firing position
-                     only valid because a pillar blocks an alternative target
-```
+Separate query requirements:
 
-`requires*` tags feed the curriculum: levels needing exactly one new technique
-go early, stacked ones go late.
+- **Par:** BFS may stop at the first winning state. Initial wins have par zero;
+  exhausting the graph without a win returns UNSOLVABLE, not a numeric par.
+- **Optimal count:** maintain shortest-path counts and process every predecessor
+  layer contributing to the shortest winning depth. Sum counts over all winning
+  states at that depth; a first-solution return is insufficient.
+- **Dead-state fraction:** explore the entire reachable graph, treating wins as
+  terminal. Traverse reverse edges from every win. States not reached by that
+  reverse traversal are unsolvable; divide their count by all reachable states.
+- **Pillar relevance:** modify the layout and reanalyse. Compare the selected
+  metrics and inspect changed routes and solutions; equal par/count alone does
+  not justify removal.
+
+`requiresBackstop` would be universal for positive-par levels, and a pillar
+cannot enable a shot by hiding an alternative target on the same ray. Neither
+is a useful curriculum tag. Teaching labels must describe demonstrated placement
+or reachability constraints and be checked against solutions and playtests.
 
 ## 2.8 Prototype order
 
-1. Grid, entities, `solidAt` / `blockerAt`.
-2. `resolvePull` + slide animation. **Stop here and play it.** Everything
-   downstream depends on whether this single move feels good.
-3. Win check, undo, reset.
-4. Solver, offline, for par.
-5. Feedback for illegal pulls — specifically the collinear separation beat.
-6. Levels.
+1. Grid, valid entities, walking, and opaque-pillar targeting.
+2. Pull-to-player movement and animation. Confirm that targeting and endpoints
+   are readable before adding content tooling.
+3. L detection, unlimited undo, reset, best-score persistence, and no-pulls
+   feedback. Keep legal-move teaching effects separate from rejected shots.
+4. A small hand-authored set: a one-pull L, a cross-axis placement, and the
+   verified winning/losing enclosure example. Play before building a miner.
+5. Offline solver for par; full-graph analysis only when candidate metrics need it.
+6. Iterate on levels and tutorial emphasis. Decide whether to mine more content
+   from evidence of distinct positioning and ordering problems.
+
+The prototype succeeds if players can predict where a pull ends, understand
+why a firing position is unavailable, and encounter meaningful ordering choices.
+Solver results establish reachability and move counts; playtests establish
+whether those choices are readable and engaging. Reconsider the movement model
+only if those experiments expose a specific limitation.
