@@ -1,8 +1,11 @@
 export {
 	BOARD_SIZE,
 	isInBounds,
+	isOccupied,
 	isWon,
+	positionKey,
 	reachableTiles,
+	samePosition,
 	solidAt,
 } from "./board";
 export {
@@ -17,6 +20,7 @@ export {
 export {
 	applyResolvedPull,
 	DIRECTIONS,
+	deltaByDirection,
 	hasNoLegalPulls,
 	type LegalPull,
 	type PullFailureReason,

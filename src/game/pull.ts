@@ -23,7 +23,7 @@ export const DIRECTIONS = [
 	"W",
 ] as const satisfies readonly Direction[];
 
-const deltaByDirection: Record<Direction, Position> = {
+export const deltaByDirection: Record<Direction, Position> = {
 	N: { x: 0, y: -1 },
 	E: { x: 1, y: 0 },
 	S: { x: 0, y: 1 },
