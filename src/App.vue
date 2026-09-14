@@ -206,10 +206,15 @@ const hasExpectedTutorialPreview = computed(() => {
 });
 const tutorialGuideTitle = computed(() => {
 	if (session.value.phase === "WON") return "L complete";
-	if (selectionPreview.value) return "Inspect the ghost";
-	return tutorialAtFiringTile.value
-		? "Choose the distant box"
-		: "Walk to the firing tile";
+	if (selectionPreview.value) return "Confirm the pull";
+	if (tutorialAtFiringTile.value) {
+		return inputMode.value === "touch"
+			? "Tap the distant box"
+			: "Aim with Space";
+	}
+	return inputMode.value === "touch"
+		? "Tap the firing tile"
+		: "Walk with the movement keys";
 });
 const tutorialGuideDetail = computed(() => {
 	if (session.value.phase === "WON") {
@@ -226,11 +231,32 @@ const tutorialGuideDetail = computed(() => {
 			: "The ghost is this pull’s exact endpoint. Press Enter again to pull, or Escape to inspect another box.";
 	}
 	if (!tutorialAtFiringTile.value) {
-		return "The glowing ring marks a firing position, not a destination. Move onto it from any reachable floor tile.";
+		return inputMode.value === "touch"
+			? "Tap the glowing firing tile. Tapping any dotted floor tile moves you there without spending a pull."
+			: "Use the arrow keys or W A S D to walk onto the glowing firing tile. Walking does not spend a pull.";
 	}
 	return inputMode.value === "touch"
-		? "You are in position. Tap the highlighted box across the row to preview its endpoint."
-		: "You are in position. Hold Space to reveal the legal tether, then press the direction toward the box.";
+		? "Tap the highlighted box once to preview the tether ray and its fixed “Stop” ghost."
+		: "Hold Space to reveal the legal tether and “Stop” ghost. While holding it, press Right Arrow or D to pull.";
+});
+
+const tutorialControlCue = computed(() => {
+	if (session.value.phase === "WON") {
+		return "Replay the lesson or continue to your room";
+	}
+	if (selectionPreview.value) {
+		return inputMode.value === "touch"
+			? "Tap the selected box again, or press Pull"
+			: "Press Enter again, or use Pull";
+	}
+	if (tutorialAtFiringTile.value) {
+		return inputMode.value === "touch"
+			? "Tap the box marked Tap"
+			: "Hold Space + Right Arrow or D";
+	}
+	return inputMode.value === "touch"
+		? "Tap the glowing floor tile"
+		: "Arrow keys or W A S D";
 });
 const statusTitle = computed(() => {
 	switch (session.value.phase) {
@@ -790,7 +816,9 @@ onBeforeUnmount(() => {
 				<p class="lede">
 					{{
 						isTutorial
-							? "Use the marked tile to see how your position fixes a pull’s endpoint."
+							? inputMode === "touch"
+								? "Tap the marked tile, preview the highlighted box, then tap it again to pull."
+								: "Walk to the marked tile, then hold Space and press the direction toward the box."
 							: inputMode === "touch"
 								? "Tap reachable floor to walk. Tap a highlighted box to preview its stop, then tap it again or press Pull."
 								: "Walk with arrows or W A S D. Hold Space to see legal tethers, then press a direction to pull."
@@ -801,6 +829,10 @@ onBeforeUnmount(() => {
 					<p class="tutorial-guide-label">Guided step</p>
 					<strong>{{ tutorialGuideTitle }}</strong>
 					<p>{{ tutorialGuideDetail }}</p>
+					<p class="tutorial-control-cue">
+						<span>Control</span>
+						<strong>{{ tutorialControlCue }}</strong>
+					</p>
 					<div class="tutorial-actions">
 						<button type="button" :disabled="isPullAnimating" @click="restartLevel">
 							{{ session.phase === "WON" ? "Replay lesson" : "Reset lesson" }}

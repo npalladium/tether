@@ -234,12 +234,21 @@ describe("Tether application", () => {
 	it("completes the guided tutorial without scoring it as a room", async () => {
 		const wrapper = mountApp();
 		await wrapper.get(".tutorial-button").trigger("click");
+		expect(wrapper.get(".tutorial-control-cue").text()).toContain(
+			"Tap the glowing floor tile",
+		);
 		await wrapper
 			.get('button[aria-label*="Tutorial firing tile"]')
 			.trigger("click");
+		expect(wrapper.get(".tutorial-control-cue").text()).toContain(
+			"Tap the box marked Tap",
+		);
 		await wrapper
 			.get('button[aria-label^="Select box at column 7, row 4"]')
 			.trigger("click");
+		expect(wrapper.get(".tutorial-control-cue").text()).toContain(
+			"Tap the selected box again",
+		);
 		await wrapper.get(".pull-confirm").trigger("click");
 
 		expect(wrapper.get(".tutorial-guide").text()).toContain("L complete");
@@ -257,6 +266,25 @@ describe("Tether application", () => {
 
 		await wrapper.get(".tutorial-actions button:last-child").trigger("click");
 		expect(wrapper.get("#level-title").text()).toContain("First connection");
+	});
+
+	it("teaches and accepts the keyboard tutorial controls", async () => {
+		mockMedia(false);
+		const wrapper = mountApp();
+		await wrapper.get(".tutorial-button").trigger("click");
+		expect(wrapper.get(".tutorial-control-cue").text()).toContain(
+			"Arrow keys or W A S D",
+		);
+
+		await keydown("ArrowDown");
+		expect(wrapper.get(".tutorial-control-cue").text()).toContain(
+			"Hold Space + Right Arrow or D",
+		);
+		await keydown(" ");
+		await keydown("ArrowRight");
+		await keyup(" ");
+
+		expect(wrapper.get(".tutorial-guide").text()).toContain("L complete");
 	});
 
 	it("preserves room state across tutorials and level changes", async () => {
