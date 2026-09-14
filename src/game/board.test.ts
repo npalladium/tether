@@ -55,6 +55,29 @@ describe("win state", () => {
 			}),
 		).toBe(false);
 	});
+
+	it("accepts an L with any corner of its two-by-two square missing", () => {
+		const square = [
+			{ x: 3, y: 3 },
+			{ x: 4, y: 3 },
+			{ x: 3, y: 4 },
+			{ x: 4, y: 4 },
+		];
+
+		for (
+			let missingCorner = 0;
+			missingCorner < square.length;
+			missingCorner += 1
+		) {
+			expect(
+				isWon({
+					player: { x: 0, y: 0 },
+					boxes: square.filter((_, index) => index !== missingCorner),
+					pulls: 0,
+				}),
+			).toBe(true);
+		}
+	});
 });
 
 describe("reachable tiles", () => {

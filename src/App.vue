@@ -218,7 +218,7 @@ const tutorialGuideTitle = computed(() => {
 });
 const tutorialGuideDetail = computed(() => {
 	if (session.value.phase === "WON") {
-		return "You made the L in one pull. Replay the lesson or return to your room.";
+		return "You made one valid L in one pull. Any rotation of the L counts. Replay the lesson or return to your room.";
 	}
 	if (selectionPreview.value) {
 		if (inputMode.value === "touch") {
@@ -271,7 +271,7 @@ const statusTitle = computed(() => {
 const statusDetail = computed(() => {
 	switch (session.value.phase) {
 		case "WON":
-			return `Solved in ${session.value.state.pulls} ${pluralisePull(session.value.state.pulls)}.`;
+			return `Solved in ${session.value.state.pulls} ${pluralisePull(session.value.state.pulls)}. Any L orientation counts.`;
 		case "NO_PULLS":
 			return hasHistory.value
 				? "No moving pulls remain. Undo the last pull or restart the room."
@@ -688,8 +688,21 @@ onBeforeUnmount(() => {
 				</h1>
 				<p class="entry-lede">
 					Walk the room, find a clear line, and tether each box toward you. Bring all
-					three together to make an L.
+					three together to make an L facing any direction.
 				</p>
+				<div
+					class="goal-orientations"
+					role="img"
+					aria-label="Any of the four rotations of an L made from three boxes wins"
+				>
+					<span>Any direction wins</span>
+					<div aria-hidden="true">
+						<i class="mini-l"><b></b><b></b><b></b><b class="is-empty"></b></i>
+						<i class="mini-l"><b></b><b></b><b class="is-empty"></b><b></b></i>
+						<i class="mini-l"><b></b><b class="is-empty"></b><b></b><b></b></i>
+						<i class="mini-l"><b class="is-empty"></b><b></b><b></b><b></b></i>
+					</div>
+				</div>
 
 				<div class="entry-actions">
 					<button ref="entryStart" type="button" class="start-button" @click="enterNormalRoom">
@@ -866,7 +879,7 @@ onBeforeUnmount(() => {
 					</template>
 					<div>
 						<span class="step-number">03</span>
-						<p><strong>Need another method?</strong> How to play shows every touch, mouse, and keyboard control.</p>
+						<p><strong>Make any L.</strong> Any rotation counts. How to play shows every control method.</p>
 					</div>
 				</div>
 			</div>

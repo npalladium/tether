@@ -93,6 +93,9 @@ onMounted(() => {
 				</button>
 			</header>
 
+			<p class="guide-goal-note">
+				<strong>Goal:</strong> fit the three boxes into any L. It may face any of the four directions.
+			</p>
 			<p id="guide-summary" class="guide-summary">{{ guideSummary }}</p>
 
 			<div class="guide-mode-tabs" role="group" aria-label="Choose control instructions">

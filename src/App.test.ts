@@ -117,11 +117,17 @@ describe("Tether application", () => {
 		const wrapper = mountApp();
 		expect(wrapper.get(".entry-controls").text()).toContain("Tap dotted floor");
 		expect(wrapper.get(".entry-controls").text()).not.toContain("Hold Space");
+		const goal = wrapper.get(".goal-orientations");
+		expect(goal.attributes("aria-label")).toContain("four rotations");
+		expect(goal.findAll(".mini-l")).toHaveLength(4);
 		await enterGame(wrapper);
 		await wrapper.get(".guide-button").trigger("click");
 
 		expect(wrapper.find("#touch-controls-title").exists()).toBe(true);
 		expect(wrapper.find("#keyboard-controls-title").exists()).toBe(false);
+		expect(wrapper.get(".guide-goal-note").text()).toContain(
+			"any of the four directions",
+		);
 		await wrapper
 			.findAll(".guide-mode-tabs button")
 			.find((button) => button.text().includes("All controls"))
@@ -252,6 +258,9 @@ describe("Tether application", () => {
 		await wrapper.get(".pull-confirm").trigger("click");
 
 		expect(wrapper.get(".tutorial-guide").text()).toContain("L complete");
+		expect(wrapper.get(".tutorial-guide").text()).toContain(
+			"Any rotation of the L counts",
+		);
 		expect(
 			window.localStorage.getItem("tether:guided-first-pull-v1:best-pulls"),
 		).toBeNull();
@@ -285,6 +294,9 @@ describe("Tether application", () => {
 		await keyup(" ");
 
 		expect(wrapper.get(".tutorial-guide").text()).toContain("L complete");
+		expect(wrapper.get(".tutorial-guide").text()).toContain(
+			"Any rotation of the L counts",
+		);
 	});
 
 	it("preserves room state across tutorials and level changes", async () => {

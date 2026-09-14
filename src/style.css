@@ -510,9 +510,23 @@ kbd {
 	border-color: var(--aqua);
 }
 
+.guide-goal-note {
+	margin: 1.25rem 0 0;
+	padding: 0.7rem 0.8rem;
+	border-left: 2px solid var(--gold);
+	color: var(--muted);
+	background: rgb(237 199 107 / 7%);
+	font-size: 0.78rem;
+	line-height: 1.5;
+}
+
+.guide-goal-note strong {
+	color: var(--gold);
+}
+
 .guide-summary {
 	max-width: 31rem;
-	margin: 1.5rem 0;
+	margin: 0.75rem 0 1.5rem;
 	color: var(--muted);
 	font-size: 0.92rem;
 	line-height: 1.7;
@@ -1099,22 +1113,44 @@ h1 {
 	font-weight: 600;
 }
 
+.goal-orientations {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.65rem 1rem;
+	align-items: center;
+	margin-top: 1rem;
+}
+
+.goal-orientations > span {
+	color: var(--gold);
+	font:
+		0.61rem "DM Mono",
+		ui-monospace,
+		monospace;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.goal-orientations > div {
+	display: flex;
+	gap: 0.55rem;
+	align-items: center;
+}
+
 .mini-l {
 	display: inline-grid;
-	grid-template-columns: repeat(2, 0.65rem);
-	grid-template-rows: repeat(2, 0.65rem);
+	grid-template-columns: repeat(2, 0.48rem);
+	grid-template-rows: repeat(2, 0.48rem);
 	gap: 2px;
-	margin-left: 0.45rem;
-	vertical-align: -0.25rem;
 }
 
-.mini-l i {
+.mini-l b {
 	background: var(--coral);
+	box-shadow: 0 0 0.3rem rgb(226 105 81 / 22%);
 }
 
-.mini-l i:nth-child(3) {
-	grid-column: 2;
-	grid-row: 2;
+.mini-l .is-empty {
+	visibility: hidden;
 }
 
 .play-area {

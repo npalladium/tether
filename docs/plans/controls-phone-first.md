@@ -15,6 +15,7 @@ Explore controls in the `controls-phone-first` worktree, preserving the current 
 - Assistance boards remain read-only; tutorial progress and room scores remain isolated.
 - Teaching follows the primary pointer capability: coarse pointers receive touch-first copy; fine pointers receive keyboard-and-mouse copy. The in-game guide always exposes Touch, Keyboard & mouse, and All controls views, and an explicit view choice is not overwritten if capabilities change.
 - The guided tutorial must teach the recommended controls in context: movement at the starting step, aiming/selection at the firing tile, and confirmation after preview. A visible control cue changes with tutorial state and input mode.
+- Goal teaching must explicitly say that any of the four L rotations wins and show all four orientations on the entry screen; tutorial completion repeats the rule.
 
 ## Ownership
 
