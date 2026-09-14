@@ -98,6 +98,56 @@ const turningRoom: Level = parseLevel({
 	par: 3,
 });
 
+const splitCrossing: Level = parseLevel({
+	id: "split-crossing-v1",
+	title: "Split crossing",
+	startPlayer: { x: 2, y: 5 },
+	startBoxes: [
+		{ x: 6, y: 7 },
+		{ x: 2, y: 0 },
+		{ x: 0, y: 0 },
+	],
+	pillars: [
+		{ x: 1, y: 7 },
+		{ x: 4, y: 0 },
+		{ x: 2, y: 1 },
+	],
+	par: 5,
+});
+
+const needlesEye: Level = parseLevel({
+	id: "needles-eye-v1",
+	title: "Needle's eye",
+	startPlayer: { x: 3, y: 7 },
+	startBoxes: [
+		{ x: 4, y: 6 },
+		{ x: 1, y: 0 },
+		{ x: 2, y: 6 },
+	],
+	pillars: [
+		{ x: 3, y: 6 },
+		{ x: 2, y: 5 },
+	],
+	par: 5,
+});
+
+const devilsElbow: Level = parseLevel({
+	id: "devils-elbow-v1",
+	title: "Devil's elbow",
+	startPlayer: { x: 3, y: 5 },
+	startBoxes: [
+		{ x: 4, y: 1 },
+		{ x: 3, y: 0 },
+		{ x: 6, y: 5 },
+	],
+	pillars: [
+		{ x: 3, y: 1 },
+		{ x: 5, y: 1 },
+		{ x: 5, y: 5 },
+	],
+	par: 6,
+});
+
 export const levels: readonly Level[] = [
 	defaultLevel,
 	chooseTheStop,
@@ -106,6 +156,9 @@ export const levels: readonly Level[] = [
 	openCorners,
 	screeningLine,
 	turningRoom,
+	splitCrossing,
+	needlesEye,
+	devilsElbow,
 ];
 
 export const levelGroups: readonly {
@@ -118,6 +171,13 @@ export const levelGroups: readonly {
 	},
 	{
 		title: "Puzzles",
-		levels: [openCorners, screeningLine, turningRoom],
+		levels: [
+			openCorners,
+			screeningLine,
+			turningRoom,
+			splitCrossing,
+			needlesEye,
+			devilsElbow,
+		],
 	},
 ];

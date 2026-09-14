@@ -51,6 +51,28 @@ const solutions: Readonly<Record<string, readonly SolutionStep[]>> = {
 		{ firing: { x: 7, y: 2 }, direction: "W" },
 		{ firing: { x: 5, y: 1 }, direction: "S" },
 	],
+	"split-crossing-v1": [
+		{ firing: { x: 6, y: 1 }, direction: "S" },
+		{ firing: { x: 0, y: 4 }, direction: "N" },
+		{ firing: { x: 0, y: 0 }, direction: "E" },
+		{ firing: { x: 1, y: 4 }, direction: "N" },
+		{ firing: { x: 0, y: 2 }, direction: "E" },
+	],
+	"needles-eye-v1": [
+		{ firing: { x: 3, y: 0 }, direction: "W" },
+		{ firing: { x: 4, y: 0 }, direction: "S" },
+		{ firing: { x: 1, y: 1 }, direction: "E" },
+		{ firing: { x: 0, y: 6 }, direction: "E" },
+		{ firing: { x: 1, y: 0 }, direction: "S" },
+	],
+	"devils-elbow-v1": [
+		{ firing: { x: 0, y: 0 }, direction: "E" },
+		{ firing: { x: 6, y: 1 }, direction: "S" },
+		{ firing: { x: 1, y: 2 }, direction: "E" },
+		{ firing: { x: 1, y: 3 }, direction: "N" },
+		{ firing: { x: 4, y: 4 }, direction: "N" },
+		{ firing: { x: 0, y: 3 }, direction: "E" },
+	],
 	"guided-first-pull-v1": [{ firing: { x: 2, y: 3 }, direction: "E" }],
 };
 

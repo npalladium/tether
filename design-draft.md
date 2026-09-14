@@ -226,8 +226,8 @@ Keep an explicit inventory of every authored layout separate from examples and
 proposals:
 
 ### Authored source inventory
-`src/level.ts` exports seven selectable rooms. Its **Learn the pull** group is a
-four-room teaching sequence; its **Puzzles** group contains three normal,
+`src/level.ts` exports ten selectable rooms. Its **Learn the pull** group is a
+four-room teaching sequence; its **Puzzles** group contains six normal,
 non-teaching application rooms. The table records an independent exhaustive
 canonical-state audit of the current opaque-pillar resolver. “Routes” counts
 shortest canonical state paths, not walking routes or labelled-box permutations.
@@ -241,6 +241,9 @@ shortest canonical state paths, not walking routes or labelled-box permutations.
 | Puzzles — `open-corners-v1`, **Open corners** | Player `(0,7)`; boxes `(1,1)`, `(6,1)`, `(3,5)`; no pillars. Normal application room, not a new lesson. | Par 4; 7,140 states; 290 shortest routes; no no-win states. Witness: `(1,7)` N, `(0,5)` E, `(1,1)` E, `(2,6)` N. |
 | Puzzles — `screening-line-v1`, **Screening line** | Player `(0,6)`; boxes `(2,2)`, `(5,2)`, `(5,5)`; opaque pillar `(3,4)`. Normal application room combining screening and placement. | Par 4; 6,545 states; 312 shortest routes; 4 no-win states. Witness: `(0,5)` E, `(2,4)` N, `(1,2)` E, `(1,2)` S. |
 | Puzzles — `turning-room-v1`, **Turning room** | Player `(0,7)`; boxes `(1,2)`, `(6,3)`, `(3,6)`; opaque pillars `(3,3)`, `(4,4)`. Normal application room combining known rules. | Par 3; 5,020 states; 6 shortest routes; 62 no-win states. Witness: `(6,6)` W, `(7,2)` W, `(5,1)` S. |
+| Puzzles — `split-crossing-v1`, **Split crossing** | Player `(2,5)`; boxes `(6,7)`, `(2,0)`, `(0,0)`; opaque pillars `(1,7)`, `(4,0)`, `(2,1)`. A split-board application requiring approach from both edges. | Par 5; 15,357 states; 40 shortest routes; 1,021 no-win states. Witness: `(6,1)` S, `(0,4)` N, `(0,0)` E, `(1,4)` N, `(0,2)` E. |
+| Puzzles — `needles-eye-v1`, **Needle's eye** | Player `(3,7)`; boxes `(4,6)`, `(1,0)`, `(2,6)`; opaque pillars `(3,6)`, `(2,5)`. A compact lower-board obstruction forces the boxes through separate approach lines. | Par 5; 8,659 states; 16 shortest routes; 37 no-win states. Witness: `(3,0)` W, `(4,0)` S, `(1,1)` E, `(0,6)` E, `(1,0)` S. |
+| Puzzles — `devils-elbow-v1`, **Devil's elbow** | Player `(3,5)`; boxes `(4,1)`, `(3,0)`, `(6,5)`; opaque pillars `(3,1)`, `(5,1)`, `(5,5)`. The final room combines occluded rays with repeated changes of approach. | Par 6; 8,651 states; 5,146 shortest routes; 35 no-win states. Witness: `(0,0)` E, `(6,1)` S, `(1,2)` E, `(1,3)` N, `(4,4)` N, `(0,3)` E. |
 
 The shipped teaching group establishes endpoint choice, first-visible targeting,
 and opaque-pillar blocking. It does **not** by itself establish a full teaching
@@ -262,10 +265,9 @@ the default, alter its score, or count as progression.
 
 §1.8's verified enclosure is retained for its replayable win/loss evidence, but
 is not shipped or evidence of a current sequencing lesson. The unrepresented
-teaching-arc roles remain future authoring work. The current normal group already
-contains three application rooms, within the required two-to-five range; add at
-most two more only with coordinates, revision id, full-graph evidence, and a
-replayed witness.
+teaching-arc roles remain future authoring work. The current normal group
+contains six graph-verified application rooms. New rooms require coordinates,
+a revision id, full-graph evidence, and a replayed witness.
 
 Hand-author any remaining teaching rooms before investing in mining.
 
@@ -559,7 +561,7 @@ or reachability constraints and be checked against solutions and playtests.
    are readable before adding content tooling.
 3. L detection, unlimited undo, reset, per-session best-score update, and
    no-pulls feedback. Keep legal-move teaching effects separate from rejected shots.
-4. The current authored source set: four Learn rooms, three normal Puzzles
+4. The current authored source set: four Learn rooms, six normal Puzzles
    rooms, and separate guided practice. Keep their exact layouts and graph
    evidence in §1.10; do not substitute the historical enclosure example for a
    shipped room.
