@@ -33,7 +33,7 @@ describe("Stricli application", () => {
 		await run(application, [], context);
 
 		expect(errors).toEqual([]);
-		expect(output.join("")).toContain("Tether — Verified enclosure");
+		expect(output.join("")).toContain("Tether — First connection");
 	});
 
 	it("lets Stricli render command help without opening the game", async () => {

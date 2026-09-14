@@ -76,8 +76,11 @@ function isFiringTile(tile: Position): boolean {
 
 function cellLabel(tile: Position): string {
 	const coordinate = `Column ${tile.x + 1}, row ${tile.y + 1}`;
-	if (samePosition(props.session.state.player, tile))
-		return `${coordinate}: you are here`;
+	if (samePosition(props.session.state.player, tile)) {
+		return isFiringTile(tile)
+			? `${coordinate}: you are at the marked firing tile`
+			: `${coordinate}: you are here`;
+	}
 	if (props.level.pillars.some((pillar) => samePosition(pillar, tile))) {
 		return `${coordinate}: pillar`;
 	}

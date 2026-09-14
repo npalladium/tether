@@ -146,10 +146,7 @@ describe("CLI commands", () => {
 
 describe("interactive game loop", () => {
 	it("plays the introductory one-pull solution from scripted input", async () => {
-		const { terminal, output } = scriptedTerminal([
-			"pull e",
-			"quit",
-		]);
+		const { terminal, output } = scriptedTerminal(["pull e", "quit"]);
 
 		const session = await runGame(terminal);
 		expect(session).toMatchObject({

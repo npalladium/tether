@@ -96,7 +96,7 @@ The following are **authoring roles, not a claim that a full campaign exists**:
 
 | Segment | Role | Required evidence or experience |
 |---|---|---|
-| Separate practice | **Guided tutorial** | Walk to a firing tile, inspect the first visible target and adjacent endpoint, then explicitly pull. It is not a scored normal room. |
+| Separate practice | **Guided tutorial** | The authored `guided-first-pull-v1` isolates walk `(1,3)` → `(2,3)`, inspect the first visible east target `(6,3)` and adjacent endpoint `(3,3)`, then explicitly pull to a one-pull L. It has no pillars and is not a scored normal room. |
 | Teaching arc | **First success** | A one-pull L establishes the stopping rule. |
 | Teaching arc | **Assembly and occlusion** | Cross-axis adjacency, then opaque-pillar blocking with a legible alternate firing angle. |
 | Teaching arc | **Commitment and order** | Edge commitment and later-firing-tile preservation, with undo available. |

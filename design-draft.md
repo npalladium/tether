@@ -213,14 +213,21 @@ human choice. No claim is made yet about typical par or sustainable level count.
 Keep an explicit inventory of every authored layout separate from examples and
 proposals:
 
-- **Shipped normal default:** `src/level.ts` currently selects the
+- **Selected default teaching room:** `src/level.ts` currently selects the
   `first-connection-v1` revision, **First connection**. Player `(0,1)`, boxes
   `(0,0)`, `(1,0)`, `(7,1)`, no pillars, par 1. At the starting tile, only east
-  is a legal pull; it brings `(7,1)` to `(1,1)` and wins. This is an authored
-  introductory room, not proof of a complete teaching arc or campaign.
-- **Guided practice:** a separate tutorial session, when present in source, is
-  practice rather than a normal level: it must not replace the default room,
-  alter its score, or be counted as progression.
+  is a legal pull; it brings `(7,1)` to `(1,1)` and wins. Fresh full-graph
+  analysis finds par 1, one shortest canonical route, and 92 no-win states
+  among 24,150 reachable states (0.38%); it verifies the direct opening witness,
+  not a claim that every free-walk experiment is safe.
+- **Guided practice:** `src/tutorial.ts` defines `guided-first-pull-v1`,
+  **First tether**, separately from the normal session. Player `(1,3)` walks to
+  the marked firing tile `(2,3)`; its east pull targets `(6,3)` and lands at
+  `(3,3)`, forming an L with `(3,4)` and `(4,4)` in one pull. It has no pillars,
+  so opaque-versus-transparent line of sight is deliberately not taught there.
+  Full-graph analysis finds par 1, two shortest canonical routes, and no
+  no-win or no-legal-pull states among 7,140 reachable states. This practice
+  layout does not replace the default, alter its score, or count as progression.
 - **Historical example:** §1.8's verified enclosure is retained for its
   replayable win/loss evidence, but is not the selected default or evidence of a
   currently shipped sequencing lesson.

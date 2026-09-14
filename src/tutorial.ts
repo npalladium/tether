@@ -3,7 +3,7 @@ import { type Direction, type Level, type Position, parseLevel } from "./game";
 export const tutorialLevel: Level = parseLevel({
 	id: "guided-first-pull-v1",
 	title: "First tether",
-	startPlayer: { x: 1, y: 3 },
+	startPlayer: { x: 2, y: 2 },
 	startBoxes: [
 		{ x: 6, y: 3 },
 		{ x: 3, y: 4 },

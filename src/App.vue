@@ -71,10 +71,14 @@ type LegalSelection = Readonly<{
 }>;
 
 const session = computed<Session>({
-	get: () =>
-		isTutorial.value
-			? tutorialSession.value
-			: normalSessions.value[selectedNormalLevelId.value]!,
+	get: () => {
+		if (isTutorial.value) return tutorialSession.value;
+		const normalSession = normalSessions.value[selectedNormalLevelId.value];
+		if (normalSession === undefined) {
+			throw new Error("Selected Tether room has no session.");
+		}
+		return normalSession;
+	},
 	set: (nextSession) => {
 		if (isTutorial.value) {
 			tutorialSession.value = nextSession;
@@ -90,7 +94,7 @@ const selectedDirection = computed<Direction | null>({
 	get: () =>
 		isTutorial.value
 			? tutorialSelectedDirection.value
-			: normalSelectedDirections.value[selectedNormalLevelId.value] ?? null,
+			: (normalSelectedDirections.value[selectedNormalLevelId.value] ?? null),
 	set: (direction) => {
 		if (isTutorial.value) {
 			tutorialSelectedDirection.value = direction;
@@ -106,7 +110,7 @@ const announcement = computed<string>({
 	get: () =>
 		isTutorial.value
 			? tutorialAnnouncement.value
-			: normalAnnouncements.value[selectedNormalLevelId.value] ?? "",
+			: (normalAnnouncements.value[selectedNormalLevelId.value] ?? ""),
 	set: (nextAnnouncement) => {
 		if (isTutorial.value) {
 			tutorialAnnouncement.value = nextAnnouncement;
@@ -119,10 +123,13 @@ const announcement = computed<string>({
 	},
 });
 const levelTiles = computed(() =>
-	Array.from({ length: session.value.level.width * session.value.level.height }, (_, index) => ({
-		x: index % session.value.level.width,
-		y: Math.floor(index / session.value.level.width),
-	})),
+	Array.from(
+		{ length: session.value.level.width * session.value.level.height },
+		(_, index) => ({
+			x: index % session.value.level.width,
+			y: Math.floor(index / session.value.level.width),
+		}),
+	),
 );
 const reachableKeys = computed(
 	() =>
@@ -147,32 +154,40 @@ const legalSelections = computed<readonly LegalSelection[]>(() => {
 	});
 });
 const selectionPreview = computed<LegalPull | undefined>(() => {
-	if (!selectedDirection.value || session.value.phase !== "READY") return undefined;
+	if (!selectedDirection.value || session.value.phase !== "READY")
+		return undefined;
 	const option = pullOptions.value[selectedDirection.value];
 	return option.kind === "LEGAL" ? option : undefined;
 });
 const isPullAnimating = computed(() => engagedPull.value !== null);
 const hasHistory = computed(() => session.value.history.length > 0);
 const normalLevelNumber = computed(
-	() => normalLevels.findIndex((level) => level.id === selectedNormalLevelId.value) + 1,
+	() =>
+		normalLevels.findIndex(
+			(level) => level.id === selectedNormalLevelId.value,
+		) + 1,
 );
 const tutorialAtFiringTile = computed(() =>
 	samePosition(session.value.state.player, tutorialFiringTile),
 );
 const hasExpectedTutorialPreview = computed(() => {
 	const preview = selectionPreview.value;
+	const tutorialTarget = tutorialLevel.startBoxes[0];
 	return (
 		isTutorial.value &&
 		selectedDirection.value === tutorialPullDirection &&
 		preview !== undefined &&
-		samePosition(preview.target, tutorialLevel.startBoxes[0]!) &&
+		tutorialTarget !== undefined &&
+		samePosition(preview.target, tutorialTarget) &&
 		samePosition(preview.destination, { x: 3, y: 3 })
 	);
 });
 const tutorialGuideTitle = computed(() => {
 	if (session.value.phase === "WON") return "L complete";
 	if (selectionPreview.value) return "Inspect the ghost";
-	return tutorialAtFiringTile.value ? "Choose the distant box" : "Walk to the firing tile";
+	return tutorialAtFiringTile.value
+		? "Choose the distant box"
+		: "Walk to the firing tile";
 });
 const tutorialGuideDetail = computed(() => {
 	if (session.value.phase === "WON") {
@@ -286,7 +301,7 @@ function completePullAnimation(): void {
 
 function walkTo(tile: { x: number; y: number }): void {
 	selectedDirection.value = null;
-	if (session.value.phase !== "READY") return;
+	if (isPullAnimating.value || session.value.phase !== "READY") return;
 	const result = walk(session.value, tile);
 	if (result.kind === "REJECTED") {
 		announcement.value = "That tile is not reachable.";
@@ -299,7 +314,7 @@ function walkTo(tile: { x: number; y: number }): void {
 }
 
 function walkDirection(direction: Direction): void {
-	if (session.value.phase !== "READY") return;
+	if (isPullAnimating.value || session.value.phase !== "READY") return;
 	const delta = deltaByDirection[direction];
 	walkTo({
 		x: session.value.state.player.x + delta.x,
@@ -308,7 +323,7 @@ function walkDirection(direction: Direction): void {
 }
 
 function selectPull(direction: Direction): void {
-	if (session.value.phase !== "READY") return;
+	if (isPullAnimating.value || session.value.phase !== "READY") return;
 	const option = pullOptions.value[direction];
 	if (option.kind !== "LEGAL") {
 		selectedDirection.value = null;
@@ -428,7 +443,8 @@ function hasFocusedNativeControl(): boolean {
 }
 
 function handleKeydown(event: KeyboardEvent): void {
-	if (event.metaKey || event.ctrlKey || event.altKey || !hasEntered.value) return;
+	if (event.metaKey || event.ctrlKey || event.altKey || !hasEntered.value)
+		return;
 
 	if (showGuide.value) {
 		if (event.key === "Escape") {
@@ -589,6 +605,15 @@ onBeforeUnmount(() => {
 						</optgroup>
 					</select>
 				</label>
+				<button
+					v-if="!isTutorial"
+					type="button"
+					class="tutorial-exit"
+					:disabled="isPullAnimating"
+					@click="enterTutorial"
+				>
+					Guided tutorial
+				</button>
 				<button v-else type="button" class="tutorial-exit" :disabled="isPullAnimating" @click="exitTutorial">
 					Resume room
 				</button>
