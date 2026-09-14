@@ -3,6 +3,7 @@ import type { LegalPull, Session } from "../game";
 
 const props = defineProps<{
 	session: Session;
+	inputMode: "touch" | "keyboard";
 	selectionPreview: LegalPull | undefined;
 	isPullAnimating: boolean;
 	hasHistory: boolean;
@@ -12,6 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
 	pull: [];
+	cancel: [];
 	undo: [];
 	restart: [];
 	assist: [mode: "hint" | "solution", trigger: HTMLButtonElement];
@@ -32,28 +34,47 @@ function requestAssistance(mode: "hint" | "solution", event: MouseEvent): void {
 			</div>
 		</div>
 
-		<div v-if="selectionPreview" class="pull-controls" aria-label="Selected box pull">
-			<div class="pull-copy">
-				<span>Tether control</span>
-				<strong>
-					Box {{ selectionPreview.target.x + 1 }}, {{ selectionPreview.target.y + 1 }}
-				</strong>
-				<p>
-					Fixed destination: column {{ selectionPreview.destination.x + 1 }}, row
-					{{ selectionPreview.destination.y + 1 }}.
-				</p>
+		<div class="pull-actions" aria-label="Pull confirmation">
+			<p class="selection-hint">
+				{{
+					selectionPreview
+						? inputMode === "touch"
+							? "Tap the same box again or use Pull."
+							: "Click the box again, press Enter, or use Pull."
+						: inputMode === "touch"
+							? "Tap a highlighted box to preview its stop."
+							: "Click a highlighted box, or hold Space and press a direction."
+				}}
+			</p>
+			<p v-if="selectionPreview" class="sr-only">
+				Selected box at column {{ selectionPreview.target.x + 1 }}, row
+				{{ selectionPreview.target.y + 1 }}. It stops at column
+				{{ selectionPreview.destination.x + 1 }}, row
+				{{ selectionPreview.destination.y + 1 }}.
+			</p>
+			<div class="pull-action-buttons">
+				<button
+					type="button"
+					class="pull-confirm"
+					:disabled="!selectionPreview || session.phase !== 'READY'"
+					:aria-label="
+						selectionPreview
+							? `Pull selected box to column ${selectionPreview.destination.x + 1}, row ${selectionPreview.destination.y + 1}`
+							: 'Pull selected box'
+					"
+					@click="emit('pull')"
+				>
+					Pull
+				</button>
+				<button
+					type="button"
+					class="pull-cancel"
+					:disabled="!selectionPreview || isPullAnimating"
+					@click="emit('cancel')"
+				>
+					Cancel
+				</button>
 			</div>
-			<button
-				type="button"
-				class="pull-confirm"
-				:disabled="session.phase !== 'READY'"
-				:aria-label="
-					`Pull selected box to column ${selectionPreview.destination.x + 1}, row ${selectionPreview.destination.y + 1}`
-				"
-				@click="emit('pull')"
-			>
-				Pull
-			</button>
 		</div>
 
 		<div class="utility-controls">

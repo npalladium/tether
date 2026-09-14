@@ -6,6 +6,32 @@ import App from "./App.vue";
 
 const bestPullsStorageKey = "tether:first-connection-v1:best-pulls";
 
+let pointerChangeListener: ((event: MediaQueryListEvent) => void) | undefined;
+
+function mockMedia(coarsePointer: boolean): void {
+	pointerChangeListener = undefined;
+	Object.defineProperty(window, "matchMedia", {
+		configurable: true,
+		value: vi.fn((query: string) => ({
+			matches: query === "(pointer: coarse)" ? coarsePointer : true,
+			addEventListener: (
+				event: string,
+				listener: (change: MediaQueryListEvent) => void,
+			) => {
+				if (query === "(pointer: coarse)" && event === "change") {
+					pointerChangeListener = listener;
+				}
+			},
+			removeEventListener: vi.fn(),
+		})),
+	});
+}
+
+async function changePointerMode(coarsePointer: boolean): Promise<void> {
+	pointerChangeListener?.({ matches: coarsePointer } as MediaQueryListEvent);
+	await nextTick();
+}
+
 function mountApp(): VueWrapper {
 	return mount(App, { attachTo: document.body });
 }
@@ -25,6 +51,16 @@ async function keydown(
 	await nextTick();
 }
 
+async function keyup(
+	key: string,
+	options: KeyboardEventInit = {},
+): Promise<void> {
+	window.dispatchEvent(
+		new KeyboardEvent("keyup", { key, bubbles: true, ...options }),
+	);
+	await nextTick();
+}
+
 async function selectAndPull(
 	wrapper: VueWrapper,
 	target: RegExp,
@@ -36,10 +72,7 @@ async function selectAndPull(
 describe("Tether application", () => {
 	beforeEach(() => {
 		window.localStorage.clear();
-		Object.defineProperty(window, "matchMedia", {
-			configurable: true,
-			value: vi.fn().mockReturnValue({ matches: true }),
-		});
+		mockMedia(true);
 	});
 
 	afterEach(() => {
@@ -55,6 +88,11 @@ describe("Tether application", () => {
 		await enterGame(wrapper);
 
 		expect((await axe.run(wrapper.element)).violations).toEqual([]);
+
+		await wrapper.get(".guide-button").trigger("click");
+		expect(
+			(await axe.run(wrapper.get('[role="dialog"]').element)).violations,
+		).toEqual([]);
 	});
 
 	it("traps focus inside the guide and restores it to its trigger", async () => {
@@ -64,15 +102,54 @@ describe("Tether application", () => {
 
 		await guideButton.trigger("click");
 		const closeButton = wrapper.get(".guide-close");
-		const returnButton = wrapper.get(".guide-return");
+		const touchTab = wrapper.findAll(".guide-mode-tabs button")[0];
 		expect(document.activeElement).toBe(closeButton.element);
 
 		await closeButton.trigger("keydown", { key: "Tab" });
-		expect(document.activeElement).toBe(returnButton.element);
+		expect(document.activeElement).toBe(touchTab?.element);
 
 		await keydown("Escape");
 		expect(wrapper.find(".guide-panel").exists()).toBe(false);
 		expect(document.activeElement).toBe(guideButton.element);
+	});
+
+	it("adapts teaching to touch and lets the player reveal every control", async () => {
+		const wrapper = mountApp();
+		expect(wrapper.get(".entry-controls").text()).toContain("Tap dotted floor");
+		expect(wrapper.get(".entry-controls").text()).not.toContain("Hold Space");
+		await enterGame(wrapper);
+		await wrapper.get(".guide-button").trigger("click");
+
+		expect(wrapper.find("#touch-controls-title").exists()).toBe(true);
+		expect(wrapper.find("#keyboard-controls-title").exists()).toBe(false);
+		await wrapper
+			.findAll(".guide-mode-tabs button")
+			.find((button) => button.text().includes("All controls"))
+			?.trigger("click");
+
+		expect(wrapper.find("#touch-controls-title").exists()).toBe(true);
+		expect(wrapper.find("#keyboard-controls-title").exists()).toBe(true);
+		expect(wrapper.get(".guide-common-controls").text()).toContain(
+			"Show solution",
+		);
+		await changePointerMode(false);
+		expect(wrapper.find("#touch-controls-title").exists()).toBe(true);
+		expect(wrapper.find("#keyboard-controls-title").exists()).toBe(true);
+	});
+
+	it("adapts teaching to keyboard and mouse devices", async () => {
+		mockMedia(false);
+		const wrapper = mountApp();
+		expect(wrapper.get(".entry-controls").text()).toContain("Hold Space");
+		expect(wrapper.get(".entry-controls").text()).not.toContain(
+			"Tap dotted floor",
+		);
+		await enterGame(wrapper);
+		await wrapper.get(".guide-button").trigger("click");
+
+		expect(wrapper.find("#touch-controls-title").exists()).toBe(false);
+		expect(wrapper.find("#keyboard-controls-title").exists()).toBe(true);
+		expect(wrapper.get(".guide-shortcuts").text()).toContain("Escape");
 	});
 
 	it("confirms a selected pull when Safari leaves the clicked box unfocused", async () => {
@@ -113,23 +190,34 @@ describe("Tether application", () => {
 			.get('button[aria-label^="Select box at column 2, row 1"]')
 			.trigger("focus");
 
-		expect(wrapper.find(".pull-confirm").exists()).toBe(false);
+		expect(wrapper.get(".pull-confirm").attributes("disabled")).toBeDefined();
 		expect(wrapper.get(".status-copy").text()).not.toContain("Box selected");
 	});
 
-	it("offers keyboard equivalents for selecting a visible pull and walking floor", async () => {
+	it("uses a held Space direction for one pull without repeat walking", async () => {
 		const wrapper = mountApp();
 		await enterGame(wrapper);
-		await wrapper
-			.get('button[aria-label="Walk to column 2, row 3"]')
-			.trigger("click");
 
-		await keydown("ArrowUp", { shiftKey: true });
+		await keydown(" ");
+		await keydown("ArrowRight");
+		await keydown("ArrowRight", { repeat: true });
+		await keyup(" ");
+		await keydown("ArrowRight");
 
-		expect(
-			wrapper.find('button[aria-label="Walk to column 1, row 3"]').exists(),
-		).toBe(true);
-		expect(wrapper.find(".pull-confirm").exists()).toBe(true);
+		expect(wrapper.get(".scoreboard").text()).toContain("1");
+	});
+
+	it("pulls after a second activation of the selected box", async () => {
+		const wrapper = mountApp();
+		await enterGame(wrapper);
+		const target = wrapper.get(
+			'button[aria-label^="Select box at column 8, row 2"]',
+		);
+
+		await target.trigger("click");
+		await target.trigger("click");
+
+		expect(wrapper.get(".scoreboard").text()).toContain("1");
 	});
 
 	it("persists a winning best before a pending pull animation can be unmounted", async () => {

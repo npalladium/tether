@@ -29,6 +29,13 @@ import {
 	tutorialPullDirection,
 } from "./tutorial";
 
+type InputMode = "touch" | "keyboard";
+
+function detectInputMode(): InputMode {
+	return window.matchMedia?.("(pointer: coarse)").matches
+		? "touch"
+		: "keyboard";
+}
 const TRANSITION_MS = 260;
 const normalLevels = levels;
 const normalSessions = ref<Record<string, Session>>(
@@ -43,7 +50,7 @@ const normalAnnouncements = ref<Record<string, string>>(
 	Object.fromEntries(
 		normalLevels.map((level) => [
 			level.id,
-			"Walk to a dotted floor tile, then select a highlighted box to preview its pull.",
+			"Walk to a dotted floor tile, then choose a highlighted box to preview its pull.",
 		]),
 	),
 );
@@ -57,6 +64,7 @@ const tutorialAnnouncement = ref(
 const tutorialSelectedDirection = ref<Direction | null>(null);
 const selectedNormalLevelId = ref(defaultLevel.id);
 const isTutorial = ref(false);
+const inputMode = ref<InputMode>(detectInputMode());
 const hasEntered = ref(false);
 const showGuide = ref(false);
 const assistance = ref<{
@@ -68,10 +76,13 @@ const assistanceTrigger = ref<HTMLButtonElement | null>(null);
 const entryStart = ref<HTMLButtonElement | null>(null);
 const gameRoot = ref<HTMLElement | null>(null);
 const guideButton = ref<HTMLButtonElement | null>(null);
+const aiming = ref(false);
+const hasUsedAimedPull = ref(false);
 const tetherEndpoint = ref<{ x: number; y: number } | null>(null);
 const engagedPull = ref<LegalPull | null>(null);
 let settleTimer: number | undefined;
 let tetherFrame: number | undefined;
+let pointerQuery: MediaQueryList | undefined;
 
 type LegalSelection = Readonly<{
 	direction: Direction;
@@ -205,13 +216,21 @@ const tutorialGuideDetail = computed(() => {
 		return "You made the L in one pull. Replay the lesson or return to your room.";
 	}
 	if (selectionPreview.value) {
+		if (inputMode.value === "touch") {
+			return hasExpectedTutorialPreview.value
+				? "The ghost marks where the box will stop beside you. Tap the selected box again or press Pull."
+				: "The ghost is this pull’s exact endpoint. Tap the selected box again or press Pull, or use Cancel to inspect another box.";
+		}
 		return hasExpectedTutorialPreview.value
-			? "The ghost marks where the box will stop beside you. Confirm Pull when the endpoint makes sense."
-			: "The ghost is this pull’s exact endpoint. Confirm it, or press Escape and inspect another legal box.";
+			? "The ghost marks where the box will stop beside you. Press Enter again to pull."
+			: "The ghost is this pull’s exact endpoint. Press Enter again to pull, or Escape to inspect another box.";
 	}
-	return tutorialAtFiringTile.value
-		? "You are in position. Select the highlighted box across the row to preview its endpoint."
-		: "The glowing ring marks a firing position, not a destination. Walk onto it from any reachable floor tile.";
+	if (!tutorialAtFiringTile.value) {
+		return "The glowing ring marks a firing position, not a destination. Move onto it from any reachable floor tile.";
+	}
+	return inputMode.value === "touch"
+		? "You are in position. Tap the highlighted box across the row to preview its endpoint."
+		: "You are in position. Hold Space to reveal the legal tether, then press the direction toward the box.";
 });
 const statusTitle = computed(() => {
 	switch (session.value.phase) {
@@ -321,7 +340,9 @@ function walkTo(tile: { x: number; y: number }): void {
 	session.value = completeAnimation(result.session);
 	announcement.value = isTutorial.value
 		? `Standing at column ${tile.x + 1}, row ${tile.y + 1}. ${tutorialGuideDetail.value}`
-		: `Standing at column ${tile.x + 1}, row ${tile.y + 1}. Select a highlighted box to preview its pull.`;
+		: inputMode.value === "touch"
+			? `Standing at column ${tile.x + 1}, row ${tile.y + 1}. Tap a highlighted box to preview its pull.`
+			: `Standing at column ${tile.x + 1}, row ${tile.y + 1}. Click a highlighted box, or hold Space and press its direction.`;
 }
 
 function walkDirection(direction: Direction): void {
@@ -335,6 +356,13 @@ function walkDirection(direction: Direction): void {
 
 function selectPull(direction: Direction): void {
 	if (isPullAnimating.value || session.value.phase !== "READY") return;
+	if (
+		selectedDirection.value === direction &&
+		selectionPreview.value !== undefined
+	) {
+		pullSelected();
+		return;
+	}
 	const option = pullOptions.value[direction];
 	if (option.kind !== "LEGAL") {
 		selectedDirection.value = null;
@@ -344,17 +372,19 @@ function selectPull(direction: Direction): void {
 	selectedDirection.value = direction;
 	announcement.value =
 		`Box selected at column ${option.target.x + 1}, row ${option.target.y + 1}. ` +
-		`It will stop at column ${option.destination.x + 1}, row ${option.destination.y + 1}. Press Pull, Enter, or Space.`;
+		`It will stop at column ${option.destination.x + 1}, row ${option.destination.y + 1}. ` +
+		(inputMode.value === "touch"
+			? "Tap the box again or press Pull."
+			: "Click the box again, press Enter, or use Pull.");
 }
 
-function pullSelected(): void {
-	if (session.value.phase !== "READY" || isPullAnimating.value) return;
-	const direction = selectedDirection.value;
-	const option = selectionPreview.value;
-	if (!direction || !option) {
-		announcement.value = "Select a highlighted box before pulling.";
-		return;
-	}
+function cancelSelection(): void {
+	if (!selectedDirection.value) return;
+	selectedDirection.value = null;
+	announcement.value = "Box selection cancelled.";
+}
+
+function completePull(direction: Direction, option: LegalPull): void {
 	const result = pull(session.value, direction);
 	if (result.kind === "REJECTED") {
 		selectedDirection.value = null;
@@ -372,6 +402,28 @@ function pullSelected(): void {
 	const delay = pullAnimationDelay();
 	animateTether(option, delay);
 	settleTimer = window.setTimeout(completePullAnimation, delay);
+}
+
+function pullSelected(): void {
+	if (session.value.phase !== "READY" || isPullAnimating.value) return;
+	const direction = selectedDirection.value;
+	const option = selectionPreview.value;
+	if (!direction || !option) {
+		announcement.value = "Select a highlighted box before pulling.";
+		return;
+	}
+	completePull(direction, option);
+}
+
+function pullWhileAiming(direction: Direction): void {
+	if (hasUsedAimedPull.value || isPullAnimating.value) return;
+	hasUsedAimedPull.value = true;
+	const option = pullOptions.value[direction];
+	if (option.kind !== "LEGAL") {
+		announcement.value = rejectionMessage(option.reason);
+		return;
+	}
+	completePull(direction, option);
 }
 
 function undoLastPull(): void {
@@ -473,9 +525,14 @@ function hasFocusedNativeControl(): boolean {
 	return (
 		document.activeElement instanceof HTMLElement &&
 		document.activeElement.matches(
-			'button:not(.box-target), a[href], input, select, textarea, [contenteditable="true"]',
+			'button, a[href], input, select, textarea, [contenteditable="true"]',
 		)
 	);
+}
+
+function stopAiming(): void {
+	aiming.value = false;
+	hasUsedAimedPull.value = false;
 }
 
 function handleKeydown(event: KeyboardEvent): void {
@@ -498,21 +555,26 @@ function handleKeydown(event: KeyboardEvent): void {
 	if (event.key === "Escape") {
 		if (selectedDirection.value) {
 			event.preventDefault();
-			selectedDirection.value = null;
-			announcement.value = "Box selection cancelled.";
+			cancelSelection();
+		}
+		stopAiming();
+		return;
+	}
+	if (hasFocusedNativeControl()) return;
+	if (event.key === " ") {
+		event.preventDefault();
+		if (!event.repeat) {
+			aiming.value = true;
+			hasUsedAimedPull.value = false;
+			announcement.value = "Choose a direction to pull the first visible box.";
 		}
 		return;
 	}
-	if (
-		(event.key === "Enter" || event.key === " ") &&
-		selectedDirection.value &&
-		!hasFocusedNativeControl()
-	) {
+	if (event.key === "Enter" && selectedDirection.value) {
 		event.preventDefault();
 		pullSelected();
 		return;
 	}
-	if (hasFocusedNativeControl()) return;
 	if (event.key === "z" || event.key === "Z") {
 		event.preventDefault();
 		undoLastPull();
@@ -541,19 +603,41 @@ function handleKeydown(event: KeyboardEvent): void {
 	const direction = directionByKey[event.key];
 	if (!direction) return;
 	event.preventDefault();
-	if (event.shiftKey) {
-		selectPull(direction);
+	if (aiming.value) {
+		pullWhileAiming(direction);
 	} else {
 		walkDirection(direction);
 	}
 }
 
+function handleKeyup(event: KeyboardEvent): void {
+	if (event.key === " ") stopAiming();
+}
+
+function handleVisibilityChange(): void {
+	if (document.hidden) stopAiming();
+}
+
+function updateInputMode(event: MediaQueryListEvent): void {
+	inputMode.value = event.matches ? "touch" : "keyboard";
+}
+
 onMounted(() => {
+	pointerQuery = window.matchMedia?.("(pointer: coarse)");
+	inputMode.value = pointerQuery?.matches ? "touch" : "keyboard";
+	pointerQuery?.addEventListener?.("change", updateInputMode);
 	window.addEventListener("keydown", handleKeydown);
+	window.addEventListener("keyup", handleKeyup);
+	window.addEventListener("blur", stopAiming);
+	document.addEventListener("visibilitychange", handleVisibilityChange);
 	nextTick(() => entryStart.value?.focus());
 });
 onBeforeUnmount(() => {
+	pointerQuery?.removeEventListener?.("change", updateInputMode);
 	window.removeEventListener("keydown", handleKeydown);
+	window.removeEventListener("keyup", handleKeyup);
+	window.removeEventListener("blur", stopAiming);
+	document.removeEventListener("visibilitychange", handleVisibilityChange);
 	window.clearTimeout(settleTimer);
 	clearTetherAnimation();
 });
@@ -604,17 +688,31 @@ onBeforeUnmount(() => {
 					<div class="piece box demo-box demo-box-b"><span class="box-face"></span></div>
 					<div class="piece box demo-box demo-box-c"><span class="box-face"></span></div>
 				</div>
-				<div class="entry-controls" aria-label="Game controls">
-					<div class="entry-control">
-						<span>Walk</span>
-						<strong><kbd>↑ ↓ ← →</kbd></strong>
-						<small>or W A S D</small>
-					</div>
-					<div class="entry-control entry-control-pull">
-						<span>Pull</span>
-						<strong>Select box</strong>
-						<small>then choose Pull</small>
-					</div>
+				<div class="entry-controls" aria-label="Recommended controls for this device">
+					<template v-if="inputMode === 'touch'">
+						<div class="entry-control">
+							<span>Walk</span>
+							<strong>Tap dotted floor</strong>
+							<small>any reachable tile</small>
+						</div>
+						<div class="entry-control entry-control-pull">
+							<span>Pull</span>
+							<strong>Tap box twice</strong>
+							<small>preview, then confirm</small>
+						</div>
+					</template>
+					<template v-else>
+						<div class="entry-control">
+							<span>Walk</span>
+							<strong><kbd>↑ ↓ ← →</kbd></strong>
+							<small>or W A S D</small>
+						</div>
+						<div class="entry-control entry-control-pull">
+							<span>Pull</span>
+							<strong>Hold Space</strong>
+							<small>then press a direction</small>
+						</div>
+					</template>
 				</div>
 				<p class="entry-note">New here? The guided tutorial marks a firing position and walks you through one pull.</p>
 			</div>
@@ -674,7 +772,7 @@ onBeforeUnmount(() => {
 			</div>
 		</header>
 
-		<GuideDialog v-if="showGuide" @close="closeGuide" />
+		<GuideDialog v-if="showGuide" :input-mode="inputMode" @close="closeGuide" />
 		<AssistanceDialog
 			v-if="assistance"
 			:mode="assistance.mode"
@@ -693,7 +791,9 @@ onBeforeUnmount(() => {
 					{{
 						isTutorial
 							? "Use the marked tile to see how your position fixes a pull’s endpoint."
-							: "Walk anywhere you can reach. Select a visible box to preview its fixed destination, then Pull until all three make an L."
+							: inputMode === "touch"
+								? "Tap reachable floor to walk. Tap a highlighted box to preview its stop, then tap it again or press Pull."
+								: "Walk with arrows or W A S D. Hold Space to see legal tethers, then press a direction to pull."
 					}}
 				</p>
 
@@ -711,18 +811,30 @@ onBeforeUnmount(() => {
 					</div>
 				</aside>
 
-				<div v-else class="instruction-list" aria-label="How to play">
-					<div>
-						<span class="step-number">01</span>
-						<p><strong>Choose your position.</strong> Click dotted floor, or walk with arrows / W A S D.</p>
-					</div>
-					<div>
-						<span class="step-number">02</span>
-						<p><strong>Select, then Pull.</strong> Choose a highlighted box to preview its exact destination before confirming Pull.</p>
-					</div>
+				<div v-else class="instruction-list" aria-label="Recommended controls">
+					<template v-if="inputMode === 'touch'">
+						<div>
+							<span class="step-number">01</span>
+							<p><strong>Choose your position.</strong> Tap any dotted floor tile.</p>
+						</div>
+						<div>
+							<span class="step-number">02</span>
+							<p><strong>Preview, then Pull.</strong> Tap a highlighted box, inspect “Stop,” then tap the box again or use Pull.</p>
+						</div>
+					</template>
+					<template v-else>
+						<div>
+							<span class="step-number">01</span>
+							<p><strong>Choose your position.</strong> Walk with arrows or W A S D.</p>
+						</div>
+						<div>
+							<span class="step-number">02</span>
+							<p><strong>Aim, then Pull.</strong> Hold Space to reveal legal tethers, then press a direction.</p>
+						</div>
+					</template>
 					<div>
 						<span class="step-number">03</span>
-						<p><strong>Make the shape.</strong> <span class="mini-l" role="img" aria-label="an L made from three squares"><i></i><i></i><i></i></span></p>
+						<p><strong>Need another method?</strong> How to play shows every touch, mouse, and keyboard control.</p>
 					</div>
 				</div>
 			</div>
@@ -738,19 +850,23 @@ onBeforeUnmount(() => {
 					:selection-preview="selectionPreview"
 					:engaged-pull="engagedPull"
 					:tether-endpoint="tetherEndpoint"
+					:aiming="aiming"
 					:firing-tile="isTutorial ? tutorialFiringTile : undefined"
 					firing-tile-label="Tutorial firing tile. Walk here to align the tether."
+					:input-mode="inputMode"
 					@walk="walkTo"
 					@select="selectPull"
 				/>
 				<GameControls
 					:session="session"
+					:input-mode="inputMode"
 					:selection-preview="selectionPreview"
 					:is-pull-animating="isPullAnimating"
 					:has-history="hasHistory"
 					:status-title="statusTitle"
 					:status-detail="statusDetail"
 					@pull="pullSelected"
+					@cancel="cancelSelection"
 					@undo="undoLastPull"
 					@restart="restartLevel"
 					@assist="openAssistance"

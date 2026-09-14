@@ -16,22 +16,27 @@ type LegalSelection = Readonly<{
 	pull: LegalPull;
 }>;
 
-const props = defineProps<{
-	level: Level;
-	session: Session;
-	tiles: readonly Position[];
-	reachableKeys: ReadonlySet<string>;
-	legalSelections: readonly LegalSelection[];
-	selectedDirection: Direction | null;
-	selectionPreview: LegalPull | undefined;
-	engagedPull: LegalPull | null;
-	tetherEndpoint: Position | null;
-	firingTile?: Position;
-	firingTileLabel?: string;
-	readOnly?: boolean;
-	boardLabel?: string;
-	boardDescription?: string;
-}>();
+const props = withDefaults(
+	defineProps<{
+		level: Level;
+		session: Session;
+		tiles: readonly Position[];
+		reachableKeys: ReadonlySet<string>;
+		legalSelections: readonly LegalSelection[];
+		selectedDirection: Direction | null;
+		selectionPreview: LegalPull | undefined;
+		engagedPull: LegalPull | null;
+		tetherEndpoint: Position | null;
+		firingTile?: Position;
+		firingTileLabel?: string;
+		readOnly?: boolean;
+		aiming?: boolean;
+		inputMode?: "touch" | "keyboard";
+		boardLabel?: string;
+		boardDescription?: string;
+	}>(),
+	{ aiming: false, inputMode: "keyboard" },
+);
 
 const emit = defineEmits<{
 	walk: [tile: Position];
@@ -45,8 +50,22 @@ const rowNumbers = computed(() =>
 const columnNumbers = computed(() =>
 	Array.from({ length: props.level.width }, (_, index) => index),
 );
+const targetSelections = computed(() =>
+	props.readOnly ? [] : props.legalSelections,
+);
+const isAiming = computed(
+	() =>
+		props.aiming &&
+		!props.readOnly &&
+		props.session.phase === "READY" &&
+		props.engagedPull === null,
+);
+const aimingSelections = computed(() =>
+	isAiming.value ? targetSelections.value : [],
+);
 const visibleTether = computed(
-	() => props.engagedPull ?? props.selectionPreview,
+	() =>
+		props.engagedPull ?? (isAiming.value ? undefined : props.selectionPreview),
 );
 const isEngagedTether = computed(() => props.engagedPull !== null);
 
@@ -89,6 +108,13 @@ function isFiringTile(tile: Position): boolean {
 	return props.firingTile !== undefined && samePosition(props.firingTile, tile);
 }
 
+function isSelectedSelection(selection: LegalSelection): boolean {
+	return (
+		!isAiming.value &&
+		props.selectedDirection === selection.direction &&
+		props.selectionPreview !== undefined
+	);
+}
 function cellLabel(tile: Position): string {
 	const coordinate = `Column ${tile.x + 1}, row ${tile.y + 1}`;
 	if (samePosition(props.session.state.player, tile)) {
@@ -119,7 +145,8 @@ function walkLabel(tile: Position): string {
 
 function boxTargetLabel(selection: LegalSelection): string {
 	const { target, destination } = selection.pull;
-	return `Select box at column ${target.x + 1}, row ${target.y + 1}; fixed destination column ${destination.x + 1}, row ${destination.y + 1}`;
+	const action = isSelectedSelection(selection) ? "Pull" : "Select";
+	return `${action} box at column ${target.x + 1}, row ${target.y + 1}; destination column ${destination.x + 1}, row ${destination.y + 1}`;
 }
 </script>
 
@@ -165,10 +192,26 @@ function boxTargetLabel(selection: LegalSelection): string {
 		</table>
 
 		<svg
+			v-if="aimingSelections.length > 0"
+			class="tether-preview is-aiming"
+			:viewBox="`0 0 ${level.width} ${level.height}`"
+			aria-hidden="true"
+		>
+			<line
+				v-for="selection in aimingSelections"
+				:key="`aiming-tether-${selection.direction}`"
+				:x1="session.state.player.x + 0.5"
+				:y1="session.state.player.y + 0.5"
+				:x2="selection.pull.target.x + 0.5"
+				:y2="selection.pull.target.y + 0.5"
+			></line>
+		</svg>
+
+		<svg
 			v-if="visibleTether"
 			class="tether-preview"
 			:class="{ 'is-engaged': isEngagedTether }"
-			viewBox="0 0 8 8"
+			:viewBox="`0 0 ${level.width} ${level.height}`"
 			aria-hidden="true"
 		>
 			<line
@@ -194,7 +237,9 @@ function boxTargetLabel(selection: LegalSelection): string {
 			class="piece box"
 			:class="{
 				'is-target':
-					(selectionPreview && samePosition(selectionPreview.target, box)) ||
+					(!isAiming &&
+						selectionPreview &&
+						samePosition(selectionPreview.target, box)) ||
 					(engagedPull && samePosition(engagedPull.destination, box)),
 			}"
 			:style="positionStyle(boxPosition(box))"
@@ -203,25 +248,37 @@ function boxTargetLabel(selection: LegalSelection): string {
 			<span class="box-face"></span>
 		</div>
 		<div
-			v-if="selectionPreview"
+			v-if="selectionPreview && !isAiming"
 			class="piece box-ghost"
 			:style="positionStyle(selectionPreview.destination)"
 			aria-hidden="true"
-		></div>
+		>
+			<span class="box-ghost-label">Stop</span>
+		</div>
+		<div
+			v-for="selection in aimingSelections"
+			:key="`aiming-ghost-${selection.direction}`"
+			class="piece box-ghost is-aiming"
+			:style="positionStyle(selection.pull.destination)"
+			aria-hidden="true"
+		>
+			<span class="box-ghost-label">Stop</span>
+		</div>
 		<button
-			v-for="selection in legalSelections"
+			v-for="selection in targetSelections"
 			:key="`box-target-${selection.direction}`"
 			type="button"
 			class="piece box-target is-selectable"
-			:class="{
-				'is-selected':
-					selectedDirection === selection.direction && selectionPreview !== undefined,
-			}"
+			:class="{ 'is-selected': isSelectedSelection(selection) }"
 			:style="positionStyle(selection.pull.target)"
 			:aria-label="boxTargetLabel(selection)"
-			:aria-pressed="selectedDirection === selection.direction"
+			:aria-pressed="isSelectedSelection(selection)"
 			@click="emit('select', selection.direction)"
-		></button>
+		>
+			<span class="box-target-label" aria-hidden="true">
+				{{ isSelectedSelection(selection) ? "Pull" : inputMode === "touch" ? "Tap" : "Click" }}
+			</span>
+		</button>
 		<div class="piece player" :style="positionStyle(session.state.player)" aria-hidden="true">
 			<span class="player-core"></span>
 		</div>
@@ -232,7 +289,9 @@ function boxTargetLabel(selection: LegalSelection): string {
 	<p :id="instructionsId" class="sr-only">
 		{{
 			boardDescription ??
-			"Reachable floor tiles are buttons. Use arrow keys or W A S D to move one tile, or Shift with a direction key to select a visible box to pull."
+			(inputMode === "touch"
+				? "Reachable floor tiles are buttons. Tap a highlighted box to preview its destination, then tap the same box again or use Pull."
+				: "Reachable floor tiles are buttons. Use arrow keys or W A S D to walk. Hold Space and press a direction to pull, or activate a highlighted box twice.")
 		}}
 	</p>
 </template>
