@@ -130,8 +130,9 @@ hand-authored boards exposes a specific limitation worth addressing.
   successful pull, including the player's firing position. Walking alone does
   not add history entries.
 - Reset starts a fresh attempt and clears undo history.
-- Best is the lowest completed pull count for that level revision. It survives
-  undo, reset, replay, and subsequent sessions.
+- Best is the lowest completed pull count for the loaded level revision. It
+  survives undo, reset, and replay within that session. Persistence or score
+  separation between sessions is an interface concern, not a progression API.
 - No timer.
 
 Irreversible placements make undo important. Probing is allowed; whether players
@@ -213,30 +214,49 @@ human choice. No claim is made yet about typical par or sustainable level count.
 Keep an explicit inventory of every authored layout separate from examples and
 proposals:
 
-- **Selected default teaching room:** `src/level.ts` currently selects the
-  `first-connection-v1` revision, **First connection**. Player `(0,1)`, boxes
-  `(0,0)`, `(1,0)`, `(7,1)`, no pillars, par 1. At the starting tile, only east
-  is a legal pull; it brings `(7,1)` to `(1,1)` and wins. Fresh full-graph
-  analysis finds par 1, one shortest canonical route, and 92 no-win states
-  among 24,150 reachable states (0.38%); it verifies the direct opening witness,
-  not a claim that every free-walk experiment is safe.
-- **Guided practice:** `src/tutorial.ts` defines `guided-first-pull-v1`,
-  **First tether**, separately from the normal session. Player `(1,3)` walks to
-  the marked firing tile `(2,3)`; its east pull targets `(6,3)` and lands at
-  `(3,3)`, forming an L with `(3,4)` and `(4,4)` in one pull. It has no pillars,
-  so opaque-versus-transparent line of sight is deliberately not taught there.
-  Full-graph analysis finds par 1, two shortest canonical routes, and no
-  no-win or no-legal-pull states among 7,140 reachable states. This practice
-  layout does not replace the default, alter its score, or count as progression.
-- **Historical example:** §1.8's verified enclosure is retained for its
-  replayable win/loss evidence, but is not the selected default or evidence of a
-  currently shipped sequencing lesson.
-- **Proposed roles:** the teaching arc above and its normal-room count are
-  authoring requirements. They are not layouts until coordinates, revision id,
-  full-graph evidence, and replay are recorded.
+### Authored source inventory
+`src/level.ts` exports seven selectable rooms. Its **Learn the pull** group is a
+four-room teaching sequence; its **Puzzles** group contains three normal,
+non-teaching application rooms. The table records an independent exhaustive
+canonical-state audit of the current opaque-pillar resolver. “Routes” counts
+shortest canonical state paths, not walking routes or labelled-box permutations.
 
-Hand-author the teaching arc, normal rooms, and tutorial before investing in
-mining.
+| Group and revision | Layout and intended role | Engine evidence |
+|---|---|---|
+| Learn — `first-connection-v1`, **First connection** (selected default) | Player `(0,1)`; boxes `(0,0)`, `(1,0)`, `(7,1)`; no pillars. Immediate east targets `(7,1)` and lands `(1,1)` for the introductory L. | Par 1; 24,150 states; 1 shortest route; 92 no-win states. Witness: `(0,1)` E. The direct opening is verified, not every free-walk experiment. |
+| Learn — `choose-the-stop-v1`, **Choose the stop** | Player `(0,7)`; boxes `(3,2)`, `(3,3)`, `(0,3)`; no pillars. Teaches that firing position fixes the endpoint. | Par 3; 10,920 states; 25 shortest routes; no no-win states. Witness: `(0,7)` N, `(3,6)` W, `(2,2)` S. |
+| Learn — `nearer-box-first-v1`, **Nearer box first** | Player `(0,0)`; boxes `(3,0)`, `(6,0)`, `(3,3)`; no pillars. Teaches the first-visible box rule, not optional long-range selection. | Par 4; 11,284 states; 180 shortest routes; 4 no-win states. Witness: `(1,0)` E, `(2,2)` N, `(3,0)` S, `(2,0)` E. |
+| Learn — `around-the-pillar-v1`, **Around the pillar** | Player `(0,1)`; boxes `(0,0)`, `(1,0)`, `(7,1)`; opaque pillar `(3,1)`. Its initial east ray is `BLOCKED`; a solution needs other angles. | Par 4; 22,757 states; 115 shortest routes; 135 no-win states. Witness: `(0,2)` N, `(1,2)` N, `(7,3)` N, `(0,2)` E. |
+| Puzzles — `open-corners-v1`, **Open corners** | Player `(0,7)`; boxes `(1,1)`, `(6,1)`, `(3,5)`; no pillars. Normal application room, not a new lesson. | Par 4; 7,140 states; 290 shortest routes; no no-win states. Witness: `(1,7)` N, `(0,5)` E, `(1,1)` E, `(2,6)` N. |
+| Puzzles — `screening-line-v1`, **Screening line** | Player `(0,6)`; boxes `(2,2)`, `(5,2)`, `(5,5)`; opaque pillar `(3,4)`. Normal application room combining screening and placement. | Par 4; 6,545 states; 312 shortest routes; 4 no-win states. Witness: `(0,5)` E, `(2,4)` N, `(1,2)` E, `(1,2)` S. |
+| Puzzles — `turning-room-v1`, **Turning room** | Player `(0,7)`; boxes `(1,2)`, `(6,3)`, `(3,6)`; opaque pillars `(3,3)`, `(4,4)`. Normal application room combining known rules. | Par 3; 5,020 states; 6 shortest routes; 62 no-win states. Witness: `(6,6)` W, `(7,2)` W, `(5,1)` S. |
+
+The shipped teaching group establishes endpoint choice, first-visible targeting,
+and opaque-pillar blocking. It does **not** by itself establish a full teaching
+arc for edge commitment, access order, or recoverable enclosure; those remain
+authoring roles, not retroactive claims about the existing rooms.
+
+### Authored guided practice
+
+`src/tutorial.ts` defines `guided-first-pull-v1`, **First tether**, separately
+from the normal session. Player `(2,2)` has no legal initial pull, then walks
+south to the marked firing tile `(2,3)`. Its only legal cue action is east:
+target `(6,3)` lands at `(3,3)`, forming an L with `(3,4)` and `(4,4)`. There
+are no pillars, so opaque-versus-transparent line of sight is deliberately not
+taught. The session wins in one pull; graph evidence is par 1, 7,140 states,
+two shortest routes, and no no-win or no-legal-pull states. It does not replace
+the default, alter its score, or count as progression.
+
+### Historical example and proposed roles
+
+§1.8's verified enclosure is retained for its replayable win/loss evidence, but
+is not shipped or evidence of a current sequencing lesson. The unrepresented
+teaching-arc roles remain future authoring work. The current normal group already
+contains three application rooms, within the required two-to-five range; add at
+most two more only with coordinates, revision id, full-graph evidence, and a
+replayed witness.
+
+Hand-author any remaining teaching rooms before investing in mining.
 
 **[OPEN] Level sourcing after the authored set:**
 
@@ -309,14 +329,11 @@ State:                             // full gameplay snapshot
     pulls  : Int
 
 Session:
-    level   : Level
-    state   : State
-    history : Stack<State>
-    phase   : READY | WALKING | SLIDING | EVALUATE | WON | NO_PULLS
-
-Progress:                          // persistent, outside undo snapshots
-    bestPulls : Map<LevelId, Int>
-```
+    level     : Level
+    state     : State
+    history   : Stack<State>
+    phase     : READY | WALKING | SLIDING | EVALUATE | WON | NO_PULLS
+    bestPulls : Int?                // for this loaded level only
 
 Validate levels before play or search: exactly three distinct box cells; every
 entity in bounds; no box/pillar/player overlaps. An authored revision that
@@ -422,7 +439,10 @@ EVALUATE
 WON
     undo, history non-empty             -> undo, then EVALUATE
     restart                             -> beginLevel, then EVALUATE
-    next level                          -> beginLevel(next), then EVALUATE
+
+Loading another authored level is outside this one-level session state machine;
+the content owner starts a separate session. There is no campaign/progression
+engine transition.
 
 NO_PULLS
     undo, history non-empty             -> undo, then EVALUATE
@@ -434,9 +454,9 @@ WALKING and SLIDING are animation phases: gameplay mutation has already happened
 on entry, and input is locked during them. Skipping an animation must execute
 its completion transition, including evaluation after a pull.
 
-On entering WON, persist `bestPulls[level.id] = min(previous best, state.pulls)`,
-using the current count when no previous best exists. Undo does not erase a
-previously completed score.
+On entering WON, set `session.bestPulls` to the current count when absent,
+otherwise to the lower of its previous value and the current count. Undo does
+not erase a previously completed score. Persistence is outside this session.
 
 ## 2.6 Undo and reset
 
@@ -455,8 +475,9 @@ beginLevel(session, level):
 
 Snapshots own their box collections. Restoring one must not mutate the immutable
 level or another history entry. Undo is per successful pull, not per walking
-step. Reset, replay, and next-level entry clear history through `beginLevel`;
-undo after reset cannot resurrect an earlier attempt. Progress is untouched.
+step. Reset and replay clear history through `beginLevel`; undo after reset
+cannot resurrect an earlier attempt. Loading another level uses a separate
+session rather than an in-engine progression transition.
 
 ## 2.7 Solver and analysis
 
@@ -521,13 +542,17 @@ or reachability constraints and be checked against solutions and playtests.
 1. Grid, valid entities, walking, and opaque-pillar targeting.
 2. Pull-to-player movement and animation. Confirm that targeting and endpoints
    are readable before adding content tooling.
-3. L detection, unlimited undo, reset, best-score persistence, and no-pulls
-   feedback. Keep legal-move teaching effects separate from rejected shots.
-4. A small hand-authored set: a one-pull L, a cross-axis placement, and the
-   verified winning/losing enclosure example. Play before building a miner.
-5. Offline solver for par; full-graph analysis only when candidate metrics need it.
-6. Iterate on levels and tutorial emphasis. Decide whether to mine more content
-   from evidence of distinct positioning and ordering problems.
+3. L detection, unlimited undo, reset, per-session best-score update, and
+   no-pulls feedback. Keep legal-move teaching effects separate from rejected shots.
+4. The current authored source set: four Learn rooms, three normal Puzzles
+   rooms, and separate guided practice. Keep their exact layouts and graph
+   evidence in §1.10; do not substitute the historical enclosure example for a
+   shipped room.
+5. Offline solver for par and full-graph analysis for every authored room, not
+   only candidates whose metrics happen to be needed.
+6. Iterate on level and tutorial emphasis from replay and play evidence. Decide
+   whether to mine more content only after distinct positioning and ordering
+   problems are demonstrated.
 
 The prototype succeeds if players can predict where a pull ends, understand
 why a firing position is unavailable, and encounter meaningful ordering choices.

@@ -1466,6 +1466,10 @@ h1 {
 	}
 }
 
+.tutorial-label-short {
+	display: none;
+}
+
 @media (max-width: 620px) {
 	.entry-screen,
 	.game-shell {
@@ -1475,6 +1479,9 @@ h1 {
 	.entry-topbar,
 	.topbar {
 		min-height: 4.75rem;
+	}
+	.topbar .wordmark > span:last-child {
+		display: none;
 	}
 
 	.level-select > span {
@@ -1489,7 +1496,13 @@ h1 {
 		padding: 0.55rem 0.7rem;
 		font-size: 0.65rem;
 	}
+	.tutorial-label-full {
+		display: none;
+	}
 
+	.tutorial-label-short {
+		display: inline;
+	}
 	.entry-edition {
 		display: none;
 	}
@@ -1585,7 +1598,7 @@ h1 {
 	}
 
 	.topbar-actions {
-		gap: 0.8rem;
+		gap: 0.45rem;
 	}
 
 	.guide-button {
@@ -1602,11 +1615,29 @@ h1 {
 	}
 
 	.scoreboard div {
-		grid-template-columns: 1fr;
+		grid-template-columns: auto auto;
+		gap: 0.2rem;
+	}
+
+	.scoreboard div:first-child::before,
+	.scoreboard div:last-child::before {
+		color: var(--muted);
+		font:
+			0.5rem "DM Mono",
+			ui-monospace,
+			monospace;
+	}
+
+	.scoreboard div:first-child::before {
+		content: "P";
+	}
+
+	.scoreboard div:last-child::before {
+		content: "B";
 	}
 
 	.scoreboard {
-		gap: 0.7rem;
+		gap: 0.45rem;
 	}
 
 	.game-layout {
@@ -1685,6 +1716,7 @@ h1 {
 	.piece,
 	.box-face,
 	.box-target::before,
+	.board-cell.is-firing-tile::after,
 	.tether-preview line,
 	.pull-confirm {
 		animation: none;

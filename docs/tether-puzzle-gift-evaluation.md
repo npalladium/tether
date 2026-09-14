@@ -96,12 +96,12 @@ The following are **authoring roles, not a claim that a full campaign exists**:
 
 | Segment | Role | Required evidence or experience |
 |---|---|---|
-| Separate practice | **Guided tutorial** | The authored `guided-first-pull-v1` isolates walk `(1,3)` → `(2,3)`, inspect the first visible east target `(6,3)` and adjacent endpoint `(3,3)`, then explicitly pull to a one-pull L. It has no pillars and is not a scored normal room. |
-| Teaching arc | **First success** | A one-pull L establishes the stopping rule. |
-| Teaching arc | **Assembly and occlusion** | Cross-axis adjacency, then opaque-pillar blocking with a legible alternate firing angle. |
-| Teaching arc | **Commitment and order** | Edge commitment and later-firing-tile preservation, with undo available. |
-| Teaching arc | **Recoverable enclosure** | Only after the relevant rules are learned; validate the branch and its legibility separately. |
-| Application | **Two to five normal rooms** | Combine known rules without presenting a new mechanic; each needs a valid source definition, replay, solvability, par, and canonical shortest-solution count. |
+| Separate practice | **Guided tutorial** | The authored `guided-first-pull-v1` isolates start `(2,2)` → walk south to `(2,3)`, inspect the only legal cue action (east target `(6,3)`, endpoint `(3,3)`), then explicitly pull to a one-pull L. It has no pillars and is not a scored normal room. |
+| Current teaching group | **Endpoint, targeting, occlusion** | Four authored Learn rooms cover direct endpoint choice, firing-position endpoint choice, first-visible targeting, and an opaque `BLOCKED` ray. They do not yet demonstrate every proposed teaching role. |
+| Proposed teaching arc | **Commitment and order** | Edge commitment and later-firing-tile preservation, with undo available. |
+| Proposed teaching arc | **Recoverable enclosure** | Only after the relevant rules are learned; validate the branch and its legibility separately. |
+| Current application group | **Three normal rooms** | `open-corners-v1`, `screening-line-v1`, and `turning-room-v1` are graph-verified applications of known rules, not new mechanics. They meet the requested 2–5 normal-room count; their coordinates, replays, and metrics are inventoried in the design draft. |
+| Additional application | **Up to two more normal rooms** | Add only if they combine known rules without a new lesson and receive the same valid definition, replay, solvability, par, and canonical shortest-solution evidence. |
 
 These roles are not a universal difficulty ranking. The actual geometry,
 plausible alternatives, and clarity of each room determine how it feels.

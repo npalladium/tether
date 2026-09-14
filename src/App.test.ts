@@ -142,4 +142,49 @@ describe("Tether application", () => {
 
 		expect(window.localStorage.getItem(bestPullsStorageKey)).toBe("1");
 	});
+
+	it("completes the guided tutorial without scoring it as a room", async () => {
+		const wrapper = mountApp();
+		await wrapper.get(".tutorial-button").trigger("click");
+		await wrapper
+			.get('button[aria-label*="Tutorial firing tile"]')
+			.trigger("click");
+		await wrapper
+			.get('button[aria-label^="Select box at column 7, row 4"]')
+			.trigger("click");
+		await wrapper.get(".pull-confirm").trigger("click");
+
+		expect(wrapper.get(".tutorial-guide").text()).toContain("L complete");
+		expect(
+			window.localStorage.getItem("tether:guided-first-pull-v1:best-pulls"),
+		).toBeNull();
+
+		await vi.waitFor(() => {
+			expect(
+				wrapper
+					.get(".tutorial-actions button:last-child")
+					.attributes("disabled"),
+			).toBeUndefined();
+		});
+
+		await wrapper.get(".tutorial-actions button:last-child").trigger("click");
+		expect(wrapper.get("#level-title").text()).toContain("First connection");
+	});
+
+	it("preserves room state across tutorials and level changes", async () => {
+		const wrapper = mountApp();
+		await enterGame(wrapper);
+		await wrapper
+			.get('button[aria-label^="Select box at column 8, row 2"]')
+			.trigger("click");
+
+		await wrapper.get(".tutorial-exit").trigger("click");
+		await wrapper.get(".tutorial-exit").trigger("click");
+		expect(wrapper.find(".pull-confirm").exists()).toBe(true);
+
+		await wrapper.get(".level-select select").setValue("screening-line-v1");
+		expect(wrapper.get("#level-title").text()).toContain("Screening line");
+		await wrapper.get(".level-select select").setValue("first-connection-v1");
+		expect(wrapper.find(".pull-confirm").exists()).toBe(true);
+	});
 });

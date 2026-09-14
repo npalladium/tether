@@ -597,7 +597,12 @@ onBeforeUnmount(() => {
 				</button>
 				<label v-if="!isTutorial" class="level-select">
 					<span>Room</span>
-					<select :value="selectedNormalLevelId" :disabled="isPullAnimating" @change="selectNormalLevel">
+					<select
+						aria-label="Choose room"
+						:value="selectedNormalLevelId"
+						:disabled="isPullAnimating"
+						@change="selectNormalLevel"
+					>
 						<optgroup v-for="group in levelGroups" :key="group.title" :label="group.title">
 							<option v-for="level in group.levels" :key="level.id" :value="level.id">
 								{{ normalLevels.indexOf(level) + 1 }} · {{ level.title }}
@@ -609,10 +614,12 @@ onBeforeUnmount(() => {
 					v-if="!isTutorial"
 					type="button"
 					class="tutorial-exit"
+					aria-label="Guided tutorial"
 					:disabled="isPullAnimating"
 					@click="enterTutorial"
 				>
-					Guided tutorial
+					<span class="tutorial-label-full" aria-hidden="true">Guided tutorial</span>
+					<span class="tutorial-label-short" aria-hidden="true">Tutorial</span>
 				</button>
 				<button v-else type="button" class="tutorial-exit" :disabled="isPullAnimating" @click="exitTutorial">
 					Resume room
