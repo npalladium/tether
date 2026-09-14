@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 import App from "./App.vue";
 
-const bestPullsStorageKey = "tether:verified-enclosure:best-pulls";
+const bestPullsStorageKey = "tether:first-connection-v1:best-pulls";
 
 function mountApp(): VueWrapper {
 	return mount(App, { attachTo: document.body });
@@ -99,7 +99,7 @@ describe("Tether application", () => {
 		await keydown("ArrowDown");
 		await keydown("ArrowDown");
 
-		expect(wrapper.get(".status-copy").text()).toContain("column 1, row 3");
+		expect(wrapper.get(".status-copy").text()).toContain("column 1, row 4");
 	});
 
 	it("does not select a box or announce it when its control receives focus", async () => {
@@ -137,24 +137,9 @@ describe("Tether application", () => {
 		const wrapper = mountApp();
 		await enterGame(wrapper);
 
-		await wrapper
-			.get('button[aria-label="Walk to column 2, row 3"]')
-			.trigger("click");
-		await selectAndPull(wrapper, /Select box at column 2, row 1/);
-		await vi.runAllTimersAsync();
-
-		await wrapper
-			.get('button[aria-label="Walk to column 1, row 1"]')
-			.trigger("click");
-		await selectAndPull(wrapper, /Select box at column 3, row 1/);
-		await vi.runAllTimersAsync();
-
-		await wrapper
-			.get('button[aria-label="Walk to column 3, row 1"]')
-			.trigger("click");
-		await selectAndPull(wrapper, /Select box at column 3, row 4/);
+		await selectAndPull(wrapper, /Select box at column 8, row 2/);
 		wrapper.unmount();
 
-		expect(window.localStorage.getItem(bestPullsStorageKey)).toBe("3");
+		expect(window.localStorage.getItem(bestPullsStorageKey)).toBe("1");
 	});
 });

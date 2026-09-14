@@ -26,6 +26,8 @@ const props = defineProps<{
 	selectionPreview: LegalPull | undefined;
 	engagedPull: LegalPull | null;
 	tetherEndpoint: Position | null;
+	firingTile?: Position;
+	firingTileLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -68,6 +70,10 @@ function positionStyle(position: Position): Record<string, string> {
 	};
 }
 
+function isFiringTile(tile: Position): boolean {
+	return props.firingTile !== undefined && samePosition(props.firingTile, tile);
+}
+
 function cellLabel(tile: Position): string {
 	const coordinate = `Column ${tile.x + 1}, row ${tile.y + 1}`;
 	if (samePosition(props.session.state.player, tile))
@@ -78,13 +84,19 @@ function cellLabel(tile: Position): string {
 	if (props.session.state.boxes.some((box) => samePosition(box, tile))) {
 		return `${coordinate}: box`;
 	}
+	if (isFiringTile(tile)) {
+		return `${coordinate}: ${props.firingTileLabel ?? "marked firing tile"}`;
+	}
 	return isReachable(tile)
 		? `${coordinate}: reachable floor`
 		: `${coordinate}: floor`;
 }
 
 function walkLabel(tile: Position): string {
-	return `Walk to column ${tile.x + 1}, row ${tile.y + 1}`;
+	const coordinate = `Walk to column ${tile.x + 1}, row ${tile.y + 1}`;
+	return isFiringTile(tile)
+		? `${coordinate}: ${props.firingTileLabel ?? "marked firing tile"}`
+		: coordinate;
 }
 
 function boxTargetLabel(selection: LegalSelection): string {
@@ -120,6 +132,7 @@ function boxTargetLabel(selection: LegalSelection): string {
 						:class="{
 							'is-reachable': isWalkTarget(tileAt(column, row)),
 							'is-current': samePosition(session.state.player, tileAt(column, row)),
+							'is-firing-tile': isFiringTile(tileAt(column, row)),
 						}"
 					>
 						<span class="sr-only">{{ cellLabel(tileAt(column, row)) }}</span>

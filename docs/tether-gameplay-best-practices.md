@@ -20,14 +20,17 @@ These are a focus for the experience, not three additional rules.
 
 ## 1. Ground the design in what the player actually does
 
-**Current gameplay, verified through the CLI and current rules:**
+**Current implementation rules:**
 
 - The board is 8×8, with three identical boxes, opaque pillars, and a walking player.
 - Walking is orthogonal, restricted to reachable empty floor, and uncounted.
 - A cardinal pull selects the first visible box and brings it all the way to the adjacent tile on that ray. The player stays still. Pillars block both walking and targeting; boxes behind the first box cannot be selected.
 - Only pulls that move a box count. An adjacent box, a blocked ray, or an empty ray does not cost a pull.
 - The goal is three cells of a 2×2 square: an L in any orientation, anywhere on the board. There are no designated destination tiles.
-- Undo restores the state and count before the last successful pull, including the firing position. Walking does not create undo entries. Reset preserves the best score within the running CLI session.
+- Undo restores the state and count before the last successful pull, including the firing position. Walking does not create undo entries. Reset preserves the best score within the running session.
+
+The concrete authored-layout inventory belongs in the design draft. The
+historical enclosure replay below does not identify the selected default level.
 
 These rules make the central decision **“Where must I stand, and what will moving this box make possible or impossible next?”**, not simply “Which box should move closer to the others?” [G]
 
@@ -102,24 +105,36 @@ Useful puzzle motifs include:
 | Temporary displacement | Must I undo apparent progress geometrically? | Breaking a useful arrangement opens a necessary route or ray. |
 | Enclosure | Will I still have somewhere useful to go? | Boxes and pillars can isolate the player before the goal is achieved. |
 
-These are **design recommendations**, not claims that the current single CLI level demonstrates every motif or that every motif must appear in every puzzle.
+These are **design recommendations**, not claims that every currently authored
+room demonstrates every motif or that every motif must appear in every puzzle.
 
 A pillar earns its place by affecting routes, targeting, a meaningful alternative, or the board's teaching purpose. Do not equate “removing it leaves one known solution intact” with “it is irrelevant”: it may shape the choices and failures around that solution. Equally, more pillars do not automatically mean a deeper puzzle.
 
 ## 5. Teach consequences through small, legible situations
 
-The existing design draft proposes a progression from endpoint placement to cross-axis adjacency, edge commitment, opaque pillars, access order, and enclosure. This is a sensible content direction, not an already-delivered campaign. [G]
+The design draft's teaching arc moves from endpoint placement through cross-axis
+assembly, opaque-pillar occlusion, edge commitment, access order, and a
+recoverable enclosure. It is a content direction, not a statement that the
+whole arc already exists. [G]
 
-Recommended player-facing progression:
+Recommended player-facing teaching arc:
 
 1. **First success:** a one-pull L demonstrates the endpoint rule and immediately recognisable victory. Keep the same three boxes and L objective used later.
 2. **Assembly:** expose why adjacency must be made from the other axis. Let the player discover a useful position rather than memorise an unexplained prohibition.
-3. **Commitment and recovery:** demonstrate an edge departure and make undo available as part of normal reasoning.
-4. **Occlusion:** use a clearly relevant pillar so the player must find another route or firing angle.
+3. **Occlusion:** use a clearly relevant opaque pillar so the player must find another route or firing angle.
+4. **Commitment and recovery:** demonstrate an edge departure and make undo available as part of normal reasoning.
 5. **Order:** make two individually plausible placements differ in whether a later firing tile remains accessible.
-6. **Combination:** combine already-understood ideas, including a recoverable non-winning enclosure.
+6. **Combination:** use a recoverable non-winning enclosure only after the relevant rules are established.
 
-Do not treat this as a mandatory difficulty ranking. For example, an edge lesson with many plausible destinations can be harder than a plainly visible pillar. Each early board should have one dominant insight, even though all the underlying rules remain active.
+After the teaching arc, two to five normal rooms should combine these known
+rules rather than introduce a new lesson. Each needs source-level coordinates
+and revision id, a replayed solution, and exhaustive evidence for solvability,
+par, and canonical shortest-solution count.
+
+Do not treat this as a mandatory difficulty ranking. For example, an edge lesson
+with many plausible destinations can be harder than a plainly visible pillar.
+Each teaching board should have one dominant insight, even though all the
+underlying rules remain active.
 
 **Quality criterion:** after solving, the player can describe a reusable idea—not only repeat the coordinates of the solution.
 
@@ -157,7 +172,10 @@ Potential hints should preserve agency: first restate a relevant rule, then dire
 
 ## 8. Reward completion first, refinement second
 
-The observed replay loop was useful: an initial four-pull completion was improved to three by choosing a better first stopping position. That is concrete evidence that this level supports refinement—not evidence of a universal replay loop or of an optimal three-pull solution. [G]
+The historical enclosure replay was useful: an initial four-pull completion was
+improved to three by choosing a better first stopping position. That is concrete
+historical evidence that this *example* supports refinement—not evidence of a
+universal replay loop or of an optimal three-pull solution. [G]
 
 **Recommendation:** make solving the primary achievement and fewer pulls an optional second challenge.
 
@@ -170,11 +188,13 @@ Little's “atom of play” asks for the smallest increment that delivers a sati
 
 The CLI currently starts a fresh session when launched. Best-score preservation across process restarts is a design-draft aspiration, not something established by these CLI sessions.
 
-## 9. A concrete lesson from the current level
+## 9. Historical enclosure evidence, not the current default
 
-Coordinates are `(x, y)`, east and south increasing. The CLI starts the player at `(0,0)`, with boxes at `(1,0)`, `(2,0)`, `(2,3)` and a pillar at `(3,1)`.
+Coordinates are `(x, y)`, east and south increasing. This retained design
+example starts the player at `(0,0)`, with boxes at `(1,0)`, `(2,0)`, `(2,3)`
+and an opaque pillar at `(3,1)`. It is no longer the selected default level.
 
-### A plausible-looking placement can remove all access
+### A replayed placement removes all access
 
 ```text
 walk 1 2
@@ -183,11 +203,17 @@ walk 2 1
 pull S
 ```
 
-The first pull places a box at `(1,1)`. The second places one at `(2,2)`, leaving the player at `(2,1)` surrounded by those boxes, the box at `(2,0)`, and the pillar at `(3,1)`. The boxes are not an L. The live CLI reported `Phase: NO_PULLS` at two pulls; `undo` restored `READY` at one pull.
+The first pull places a box at `(1,1)`. The second places one at `(2,2)`,
+leaving the player at `(2,1)` surrounded by those boxes, the box at `(2,0)`,
+and the pillar at `(3,1)`. The boxes are not an L. A fresh replay against the
+current engine reaches `NO_PULLS` at two pulls.
 
-The teaching value is the visible connection between the move and the lost access. The sequence is verified; whether a new player naturally chooses it is not established.
+The sequence is a valid counterexample, not evidence that a new player will
+naturally choose it. Exhaustive canonical-state analysis finds 43 no-win states
+among 10,500 reachable states (0.41%), so its trap is too infrequent to support
+a claim that it is a reliably discoverable teaching moment.
 
-### The same first pull admits a winning continuation
+### The same first pull admits winning continuations
 
 After undoing the second pull:
 
@@ -198,26 +224,22 @@ walk 2 0
 pull S
 ```
 
-The live CLI reported `WON` at three pulls. A different fresh-start solution also won in three:
-
-```text
-walk 1 3
-pull N
-walk 0 3
-pull E
-walk 2 3
-pull N
-```
-
-This supports three bounded conclusions: move order matters on this board; a losing branch can be recovered without restarting; and the board permits different successful three-pull sequences. It does not establish the minimum, a human difficulty rating, or the quality of a full level set.
+This reaches `WON` at three pulls. The alternate fresh-start replay
+`walk 1 3`, `pull N`, `walk 0 3`, `pull E`, `walk 2 3`, `pull N` also reaches
+`WON` at three. Exhaustive analysis establishes par 3 and six shortest
+canonical routes to five winning states. It supports bounded claims about this
+historical board—move order matters and undo recovers the shown terminal
+branch—not a human difficulty rating or a full level-set evaluation.
 
 ## 10. Priorities for Tether's player experience
 
 In order of relevance to the game as played:
 
-1. **Explain the actual contract at the point of play.** The CLI help currently lists commands but does not explain the adjacent stopping tile or the L objective. Make those fundamentals available without requiring an external description.
+1. **Explain the actual contract at the point of play.** Make the adjacent
+   stopping tile, first-visible targeting, opaque pillar blocking, and L goal
+   available without requiring an external description.
 2. **Let geometry supply the challenge.** Use the existing pull rule, cross-axis assembly, and access dependencies to create different insights before introducing another verb or box type.
-3. **Make recovery understandable.** The verified enclosure currently reports `NO_PULLS`; an explanation that no moving pull is available and that undo/reset remain possible would teach more than a phase label alone.
+3. **Make recovery understandable.** Any `NO_PULLS` state should explain that no moving pull is available and that undo/reset remain possible; a phase label alone does not teach recovery.
 4. **Separate solving from mastery.** Preserve completion, optional pull optimisation, and different successful solutions. Do not add time pressure or enforce an unverified par.
 5. **Keep quality criteria qualitative where they need to be.** A small move count, three choices, equal numerical values, or a unique solution is not a substitute for a readable and worthwhile decision.
 
@@ -227,7 +249,15 @@ These are gameplay recommendations only; no rules or interface changes accompany
 
 ### Local gameplay evidence
 
-**[G]** [Existing design draft, Part 1](../design-draft.md), [shared playable level](../src/level.ts), [pull rules](../src/game/pull.ts), [goal and reachability rules](../src/game/board.ts), [session rules](../src/game/session.ts), and [CLI behaviour](../src/cli/game.ts). The gameplay examples above were exercised with `pnpm cli` on 2026-09-13, including blocked/adjacent rejected pulls, the enclosure, undo, both winning sequences, and reset preserving the in-session best. CLI play also established the earlier four-to-three-pull improvement. The design draft includes proposals beyond the current CLI; this guide distinguishes them from observed behaviour.
+**[G]** [Existing design draft, Part 1](../design-draft.md), [shared playable
+level](../src/level.ts), [pull rules](../src/game/pull.ts), [goal and
+reachability rules](../src/game/board.ts), [session rules](../src/game/session.ts),
+and [CLI behaviour](../src/cli/game.ts). The enclosure command examples were
+historically exercised with `pnpm cli` on 2026-09-13, including
+blocked/adjacent rejected pulls, the enclosure, undo, both winning sequences,
+and reset preserving the in-session best. They are historical play evidence,
+not a claim about the selected current level. The current source inventory and
+fresh engine replays are recorded in the design draft.
 
 ### External reading
 

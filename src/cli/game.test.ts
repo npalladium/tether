@@ -47,12 +47,28 @@ describe("CLI rendering", () => {
 	it("renders the single level with coordinates, entities, and status", () => {
 		const rendered = renderSession(beginSession(defaultLevel));
 
-		expect(rendered).toContain("Tether — Verified enclosure");
+		expect(rendered).toContain("Tether — First connection");
 		expect(rendered).toContain("    0 1 2 3 4 5 6 7");
-		expect(rendered).toContain(" 0  @ B B . . . . .");
-		expect(rendered).toContain(" 1  . . . # . . . .");
+		expect(rendered).toContain(" 0  B B . . . . . .");
+		expect(rendered).toContain(" 1  @ . . . . . . B");
 		expect(rendered).toContain("Phase: READY");
 		expect(rendered).toContain("Pulls: 0 | Best: —");
+	});
+
+	it("advises whether undo is available after no legal pulls", () => {
+		const noPulls = {
+			...beginSession(defaultLevel),
+			phase: "NO_PULLS" as const,
+		};
+		const withHistory = { ...noPulls, history: [noPulls.state] };
+
+		expect(renderSession(noPulls)).toContain(
+			"No legal pulls remain. Use reset to restart the level.",
+		);
+		expect(renderSession(noPulls)).not.toContain("Use undo to recover");
+		expect(renderSession(withHistory)).toContain(
+			"No legal pulls remain. Use undo to recover or reset to restart the level.",
+		);
 	});
 });
 
@@ -77,7 +93,7 @@ describe("CLI commands", () => {
 
 		for (const [input, message] of [
 			["walk 8 0", "Walk coordinates must be integers from 0 to 7."],
-			["walk 2 0", "That tile is not reachable."],
+			["walk 1 0", "That tile is not reachable."],
 			["pull up", "Pull direction must be N, E, S, or W."],
 			["pull w", "No box is visible in that direction."],
 			["dance", "Unknown command. Type help for available commands."],
@@ -85,6 +101,21 @@ describe("CLI commands", () => {
 			const result = executeInput(session, input);
 			expect(result).toMatchObject({ kind: "CONTINUE", session, message });
 		}
+	});
+
+	it("rejects walking to the current tile without settling", () => {
+		const session = beginSession(defaultLevel);
+		const result = executeInput(session, "walk 0 1");
+
+		expect(result).toMatchObject({
+			kind: "CONTINUE",
+			message: "You are already on that tile.",
+		});
+		if (result.kind !== "CONTINUE") {
+			throw new Error("Expected walking to continue the game");
+		}
+		expect(result.session).toBe(session);
+		expect(result.session.phase).toBe("READY");
 	});
 
 	it("supports help, quit, undo, and reset", () => {
@@ -114,24 +145,19 @@ describe("CLI commands", () => {
 });
 
 describe("interactive game loop", () => {
-	it("plays the documented three-pull solution from scripted input", async () => {
+	it("plays the introductory one-pull solution from scripted input", async () => {
 		const { terminal, output } = scriptedTerminal([
-			"walk 1 2",
-			"pull n",
-			"walk 0 0",
 			"pull e",
-			"walk 2 0",
-			"pull s",
 			"quit",
 		]);
 
 		const session = await runGame(terminal);
 		expect(session).toMatchObject({
 			phase: "WON",
-			state: { pulls: 3 },
-			bestPulls: 3,
+			state: { pulls: 1 },
+			bestPulls: 1,
 		});
 		expect(output()).toContain("Phase: WON");
-		expect(output()).toContain("Pulls: 3 | Best: 3");
+		expect(output()).toContain("Pulls: 1 | Best: 1");
 	});
 });

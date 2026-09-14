@@ -4,7 +4,7 @@
 	"ignorePatterns": ["tsconfig.json"],
 	"testRunner": "command",
 	"commandRunner": {
-		"command": "pnpm test"
+		"command": "pnpm exec vitest run src/game --no-file-parallelism"
 	},
 	"coverageAnalysis": "off",
 	"reporters": ["html", "clear-text", "progress"],

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { BOARD_SIZE } from "./board";
 import { type LevelDefinition, parseLevel } from "./model";
 import {
 	beginSession,
 	completeAnimation,
 	pull,
-	replay,
-	reset,
+	restart,
 	undo,
 	walk,
 } from "./session";
@@ -46,6 +46,7 @@ describe("session commands", () => {
 			session: walking,
 		});
 		expect(undo(walking)).toBe(walking);
+		expect(restart(walking)).toBe(walking);
 		expect(completeAnimation(walking).phase).toBe("READY");
 	});
 
@@ -60,11 +61,20 @@ describe("session commands", () => {
 		expect(completeAnimation(initial)).toBe(initial);
 		expect(undo(initial)).toBe(initial);
 	});
+	it("rejects walking to the player's current position", () => {
+		const initial = beginSession(parseLevel(openLevel));
+
+		expect(walk(initial, { ...initial.state.player })).toEqual({
+			kind: "REJECTED",
+			reason: "ALREADY_THERE",
+			session: initial,
+		});
+	});
 
 	it("rejects a destination outside the player's reachable region", () => {
 		const level = parseLevel({
 			id: "partitioned-walk",
-			pillars: Array.from({ length: 8 }, (_, y) => ({ x: 1, y })),
+			pillars: Array.from({ length: BOARD_SIZE }, (_, y) => ({ x: 1, y })),
 			startPlayer: { x: 0, y: 0 },
 			startBoxes: [
 				{ x: 0, y: 4 },
@@ -119,15 +129,14 @@ describe("session commands", () => {
 		});
 	});
 
-	it("locks reset during animation, then clears history without erasing the best", () => {
+	it("locks restart during animation, then clears history without erasing the best", () => {
 		const level = parseLevel(openLevel);
 		const initial = beginSession(level, 4);
 		const sliding = accepted(pull(initial, "E")).session;
 
-		expect(reset(sliding)).toBe(sliding);
-		expect(replay(sliding)).toBe(sliding);
+		expect(restart(sliding)).toBe(sliding);
 
-		const restarted = reset(completeAnimation(sliding));
+		const restarted = restart(completeAnimation(sliding));
 		expect(restarted).toMatchObject({
 			phase: "READY",
 			state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
@@ -160,8 +169,8 @@ describe("session evaluation", () => {
 		);
 		expect(unbeaten.bestPulls).toBe(0);
 
-		const replayed = replay(won);
-		expect(replayed).toMatchObject({
+		const restarted = restart(won);
+		expect(restarted).toMatchObject({
 			phase: "READY",
 			state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
 			history: [],
@@ -190,7 +199,7 @@ describe("session evaluation", () => {
 		expect(session.bestPulls).toBe(0);
 	});
 
-	it("reports a non-winning enclosure without forcing reset", () => {
+	it("restarts a non-winning enclosure", () => {
 		const level = parseLevel({
 			id: "trapped",
 			pillars: [{ x: 3, y: 1 }],
@@ -204,6 +213,12 @@ describe("session evaluation", () => {
 		const session = beginSession(level);
 
 		expect(session.phase).toBe("NO_PULLS");
-		expect(reset(session).phase).toBe("NO_PULLS");
+		const restarted = restart(session);
+		expect(restarted).not.toBe(session);
+		expect(restarted).toMatchObject({
+			phase: "NO_PULLS",
+			state: { player: level.startPlayer, boxes: level.startBoxes, pulls: 0 },
+			history: [],
+		});
 	});
 });

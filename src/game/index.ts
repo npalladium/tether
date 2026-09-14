@@ -1,5 +1,6 @@
 export {
 	BOARD_SIZE,
+	BOX_COUNT,
 	isInBounds,
 	isOccupied,
 	isWon,
@@ -18,7 +19,6 @@ export {
 	parseLevel,
 } from "./model";
 export {
-	applyResolvedPull,
 	DIRECTIONS,
 	deltaByDirection,
 	hasNoLegalPulls,
@@ -32,8 +32,7 @@ export {
 	completeAnimation,
 	type PullResult,
 	pull,
-	replay,
-	reset,
+	restart,
 	type Session,
 	type SessionPhase,
 	undo,

@@ -31,7 +31,7 @@ type RejectedCommand<Reason extends string> = Readonly<{
 
 export type WalkResult =
 	| AcceptedCommand
-	| RejectedCommand<"INPUT_LOCKED" | "UNREACHABLE">;
+	| RejectedCommand<"ALREADY_THERE" | "INPUT_LOCKED" | "UNREACHABLE">;
 
 export type PullResult =
 	| AcceptedCommand
@@ -50,6 +50,9 @@ export function beginSession(level: Level, bestPulls?: number): Session {
 export function walk(session: Session, destination: Position): WalkResult {
 	if (session.phase !== "READY") {
 		return { kind: "REJECTED", reason: "INPUT_LOCKED", session };
+	}
+	if (samePosition(session.state.player, destination)) {
+		return { kind: "REJECTED", reason: "ALREADY_THERE", session };
 	}
 	if (
 		!reachableTiles(session.level, session.state).some((tile) =>
@@ -116,13 +119,14 @@ export function undo(session: Session): Session {
 	});
 }
 
-export function reset(session: Session): Session {
-	if (session.phase !== "READY" && session.phase !== "NO_PULLS") return session;
-	return beginSession(session.level, session.bestPulls);
-}
-
-export function replay(session: Session): Session {
-	if (session.phase !== "WON") return session;
+export function restart(session: Session): Session {
+	if (
+		session.phase !== "READY" &&
+		session.phase !== "NO_PULLS" &&
+		session.phase !== "WON"
+	) {
+		return session;
+	}
 	return beginSession(session.level, session.bestPulls);
 }
 

@@ -3,8 +3,9 @@
 A grid puzzle about pulling boxes along ranks and files until they form a shape.
 The player chooses the stopping position; access to that position is the puzzle.
 
-Status: pre-prototype. The prototype uses opaque pillars and unlimited undo.
-Unsettled design choices are marked **[OPEN]**; content depth needs playtesting.
+Status: implemented rule prototype; authored content is being expanded.
+The implementation uses opaque pillars and unlimited undo. Unsettled design
+choices are marked **[OPEN]**; content depth needs playtesting.
 
 ---
 
@@ -87,14 +88,18 @@ concept still needs playtesting.
 Two different conditions matter:
 
 - **No legal pulls:** no firing position in the player's reachable region can
-  produce a moving pull. Walking may still be possible. A local enumeration is
-  sufficient to detect this; no solution search is needed.
+  produce a moving pull. Floor tiles may remain geometrically reachable, but
+  walking is intentionally disabled once this condition is detected: the
+  enumeration has already covered the entire reachable region, and repositioning
+  within that same region cannot change the available pulls. A local enumeration
+  is sufficient to detect this; no solution search is needed.
 - **Unsolvable:** legal pulls may remain, but no sequence can reach an L. This
   requires a solver or a lookup in an analysed state graph.
 
-For the prototype, show an advisory—"No pulls remain. Undo or reset."—only for
-the first condition. Never force a reset. Do not label a position unsolvable
-based on the local check.
+For the prototype, show an advisory—"No pulls remain. Undo or restart."—only
+for the first condition. If there is no undo history (for example, a level
+that starts in `NO_PULLS`), restart is the available recovery action. Never
+force a restart. Do not label a position unsolvable based on the local check.
 
 Winning is checked first. A completed L with the player trapped in its crook
 is still a win; escaping afterward is not part of the goal. Non-winning traps
@@ -134,24 +139,33 @@ prefer probing to planning is a playtesting question, not a reason to limit undo
 
 ## 1.8 Teaching order
 
-Use three boxes and the same L goal from the first lesson. Each level should
-emphasise one new idea, even though the underlying constraints act together.
+The following is a **recommended teaching arc**, not an inventory of shipped
+levels or a promised campaign. Use three boxes and the same L goal from the
+first lesson. Each teaching room should emphasise one new idea, even though the
+underlying constraints act together.
 
 1. A one-pull L. Teaches pulling to the player's adjacent tile.
 2. A new adjacency built cross-axis. Teaches Law 1.
-3. Leaving an outer edge. Teaches an irreversible placement and undo.
-4. An opaque pillar. Teaches blocked targeting and walking to another angle.
+3. An opaque pillar. Teaches blocked targeting and walking to another angle.
+4. Leaving an outer edge. Teaches an irreversible placement and undo.
 5. Reachability. A required firing tile is lost if boxes move in the wrong order.
-6. A non-winning enclosure. Teaches the no-pulls advisory and undo.
+6. A recoverable, non-winning enclosure. Teaches the no-pulls advisory and undo.
+
+After that arc, add two to five **normal rooms** only when their graph evidence
+is complete. They combine already taught endpoint, cross-axis, opaque-pillar,
+and access-order reasoning; they are applications, not occasions to introduce a
+new hidden rule. A normal room still needs an exact replay, par, canonical
+shortest-solution count, and a full-graph solvability check.
 
 Animate actual movement on legal pulls. If a lesson highlights collinear
 separation, classify it from the before/after box positions; separation occurs
 on the legal path. An adjacent-target rejection means "no room to move," not
 "collinear boxes always separate."
 
-**Verified enclosure example:** normal 8×8 board, zero-based `(x, y)` coordinates;
-x increases east, y increases south. Player `(0,0)`, boxes `(1,0)`, `(2,0)`,
-`(2,3)`, and one pillar `(3,1)`. All other tiles are empty.
+**Historical verified-enclosure counterexample (not the current default
+level):** normal 8×8 board, zero-based `(x, y)` coordinates; x increases east,
+y increases south. Player `(0,0)`, boxes `(1,0)`, `(2,0)`, `(2,3)`, and one
+opaque pillar `(3,1)`. All other tiles are empty.
 
 A losing sequence:
 
@@ -166,9 +180,13 @@ A winning alternative after the same first pull:
 2. Stand at `(0,0)` and pull east: `(2,0)` → `(1,0)`.
 3. Stand at `(2,0)` and pull south: `(2,3)` → `(2,1)`.
 
-Every firing position in both sequences is reachable. This establishes a
-solvable starting position and a reachable trap, not that the losing choice is
-intuitive or that three pulls is the minimum. Those are separate checks.
+Each firing position is reachable. A replay through the current engine confirms
+the losing line reaches `NO_PULLS` after two pulls and the alternative wins in
+three. Exhaustive canonical-state analysis confirms par 3, six shortest routes
+to five winning states, and 43 no-win states among 10,500 reachable states
+(0.41%). It therefore preserves a real terminal counterexample, but the
+infrequent trap is not evidence that players will discover or understand that
+lesson without dedicated presentation or playtesting.
 
 ## 1.9 Difficulty
 
@@ -192,9 +210,28 @@ human choice. No claim is made yet about typical par or sustainable level count.
 
 ## 1.10 Content
 
-Hand-author a small prototype set and the tutorial before investing in mining.
+Keep an explicit inventory of every authored layout separate from examples and
+proposals:
 
-**[OPEN] Level sourcing after the prototype:**
+- **Shipped normal default:** `src/level.ts` currently selects the
+  `first-connection-v1` revision, **First connection**. Player `(0,1)`, boxes
+  `(0,0)`, `(1,0)`, `(7,1)`, no pillars, par 1. At the starting tile, only east
+  is a legal pull; it brings `(7,1)` to `(1,1)` and wins. This is an authored
+  introductory room, not proof of a complete teaching arc or campaign.
+- **Guided practice:** a separate tutorial session, when present in source, is
+  practice rather than a normal level: it must not replace the default room,
+  alter its score, or be counted as progression.
+- **Historical example:** §1.8's verified enclosure is retained for its
+  replayable win/loss evidence, but is not the selected default or evidence of a
+  currently shipped sequencing lesson.
+- **Proposed roles:** the teaching arc above and its normal-room count are
+  authoring requirements. They are not layouts until coordinates, revision id,
+  full-graph evidence, and replay are recorded.
+
+Hand-author the teaching arc, normal rooms, and tutorial before investing in
+mining.
+
+**[OPEN] Level sourcing after the authored set:**
 
 | Option | Trade-off |
 |---|---|
@@ -204,9 +241,10 @@ Hand-author a small prototype set and the tutorial before investing in mining.
 | Generate-and-mine | Analyse candidates, then hand-pick and polish. Useful only once there are criteria worth mining for. |
 
 For non-tutorial candidates, par 3–6 and at most three optimal solutions are
-initial search parameters, not established quality thresholds. Reject invalid
-layouts and D4-symmetry duplicates before expensive analysis. Equivalence uses
-both box positions and the player's reachable region, not the exact walking tile.
+initial search parameters, not established quality thresholds. An intentional
+one-pull introduction is an explicit exception. Reject invalid layouts and
+D4-symmetry duplicates before expensive analysis. Equivalence uses both box
+positions and the player's reachable region, not the exact walking tile.
 
 Pillar removal is a proposal for review, not an automatic simplification. An
 unchanged par and optimal count can coexist with a different dead-state fraction
@@ -364,7 +402,7 @@ READY
     tap direction, pull LEGAL           -> applyPull, then SLIDING
     tap direction, pull ILLEGAL         -> feedback, remain READY
     undo, history non-empty             -> undo, then EVALUATE
-    reset                               -> beginLevel, then EVALUATE
+    restart                             -> beginLevel, then EVALUATE
 
 WALKING -- animation complete --> READY
 SLIDING -- animation complete --> EVALUATE
@@ -376,12 +414,12 @@ EVALUATE
 
 WON
     undo, history non-empty             -> undo, then EVALUATE
-    replay                              -> beginLevel, then EVALUATE
+    restart                             -> beginLevel, then EVALUATE
     next level                          -> beginLevel(next), then EVALUATE
 
 NO_PULLS
     undo, history non-empty             -> undo, then EVALUATE
-    reset                               -> beginLevel, then EVALUATE
+    restart                             -> beginLevel, then EVALUATE
 ```
 
 Walking cannot change the set of available pulls from the same reachable region.

@@ -1,4 +1,4 @@
-import { isInBounds } from "./board";
+import { BOARD_SIZE, BOX_COUNT, isInBounds, positionKey } from "./board";
 
 export type Position = Readonly<{
 	x: number;
@@ -18,8 +18,8 @@ export type LevelDefinition = Readonly<{
 
 export type Level = Readonly<{
 	id: string;
-	width: 8;
-	height: 8;
+	width: typeof BOARD_SIZE;
+	height: typeof BOARD_SIZE;
 	pillars: readonly Position[];
 	startPlayer: Position;
 	startBoxes: readonly Position[];
@@ -46,18 +46,16 @@ export class LevelValidationError extends Error {
 const clonePosition = (position: Position): Position =>
 	Object.freeze({ x: position.x, y: position.y });
 
-const key = (position: Position): string => `${position.x},${position.y}`;
-
 export function parseLevel(definition: LevelDefinition): Level {
-	if (definition.startBoxes.length !== 3) {
+	if (definition.startBoxes.length !== BOX_COUNT) {
 		throw new LevelValidationError(
 			"BOX_COUNT",
-			"Exactly three boxes are required",
+			`Exactly ${BOX_COUNT} boxes are required`,
 		);
 	}
 	const boxKeys = new Set<string>();
 	for (const box of definition.startBoxes) {
-		const k = key(box);
+		const k = positionKey(box);
 		if (boxKeys.has(k))
 			throw new LevelValidationError("DUPLICATE_BOX", "Boxes must be distinct");
 		boxKeys.add(k);
@@ -75,13 +73,13 @@ export function parseLevel(definition: LevelDefinition): Level {
 	}
 	const occupied = new Set<string>();
 	for (const position of [definition.startPlayer, ...definition.startBoxes]) {
-		const k = key(position);
+		const k = positionKey(position);
 		if (occupied.has(k))
 			throw new LevelValidationError("OVERLAP", "Entities cannot overlap");
 		occupied.add(k);
 	}
 	for (const pillar of definition.pillars) {
-		const pillarKey = key(pillar);
+		const pillarKey = positionKey(pillar);
 		if (occupied.has(pillarKey)) {
 			throw new LevelValidationError("OVERLAP", "Entities cannot overlap");
 		}
@@ -89,8 +87,8 @@ export function parseLevel(definition: LevelDefinition): Level {
 	}
 	return Object.freeze({
 		id: definition.id,
-		width: 8,
-		height: 8,
+		width: BOARD_SIZE,
+		height: BOARD_SIZE,
 		pillars: Object.freeze(definition.pillars.map(clonePosition)),
 		startPlayer: clonePosition(definition.startPlayer),
 		startBoxes: Object.freeze(definition.startBoxes.map(clonePosition)),

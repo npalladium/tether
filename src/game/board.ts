@@ -1,6 +1,7 @@
 import type { GameState, Level, Position } from "./model";
 
 export const BOARD_SIZE = 8;
+export const BOX_COUNT = 3;
 
 export function isBoardCoordinate(coordinate: number): boolean {
 	return (
@@ -61,8 +62,8 @@ export function positionKey(position: Position): string {
 }
 
 export function isWon(state: GameState): boolean {
-	if (state.boxes.length !== 3) return false;
-	if (new Set(state.boxes.map(positionKey)).size !== 3) return false;
+	if (state.boxes.length !== BOX_COUNT) return false;
+	if (new Set(state.boxes.map(positionKey)).size !== BOX_COUNT) return false;
 
 	const xCoordinates = state.boxes.map(({ x }) => x);
 	const yCoordinates = state.boxes.map(({ y }) => y);

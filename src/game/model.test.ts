@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { BOARD_SIZE, BOX_COUNT } from "./board";
 import { type LevelValidationError, parseLevel } from "./model";
 
 const validLevel = {
@@ -18,10 +19,11 @@ describe("level parsing", () => {
 
 		expect(level).toMatchObject({
 			id: "lesson-1",
-			width: 8,
-			height: 8,
+			width: BOARD_SIZE,
+			height: BOARD_SIZE,
 		});
 		expect(level.startBoxes).toEqual(validLevel.startBoxes);
+		expect(level.startBoxes).toHaveLength(BOX_COUNT);
 		expect(level.startBoxes).not.toBe(validLevel.startBoxes);
 		expect(level.pillars).not.toBe(validLevel.pillars);
 	});
@@ -29,7 +31,10 @@ describe("level parsing", () => {
 	it.each([
 		[
 			"BOX_COUNT",
-			{ ...validLevel, startBoxes: validLevel.startBoxes.slice(0, 2) },
+			{
+				...validLevel,
+				startBoxes: validLevel.startBoxes.slice(0, BOX_COUNT - 1),
+			},
 		],
 		[
 			"DUPLICATE_BOX",
@@ -48,7 +53,7 @@ describe("level parsing", () => {
 			{
 				...validLevel,
 				startBoxes: [
-					{ x: 8, y: 1 },
+					{ x: BOARD_SIZE, y: 1 },
 					validLevel.startBoxes[1],
 					validLevel.startBoxes[2],
 				],

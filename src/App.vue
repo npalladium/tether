@@ -13,43 +13,117 @@ import {
 	positionKey,
 	pull,
 	reachableTiles,
-	replay,
-	reset,
 	resolvePull,
+	restart,
 	type Session,
+	samePosition,
 	undo,
 	walk,
 } from "./game";
-import { defaultLevel } from "./level";
+import { defaultLevel, levels } from "./level";
+import {
+	tutorialFiringTile,
+	tutorialLevel,
+	tutorialPullDirection,
+} from "./tutorial";
 
-const CELL_COUNT = defaultLevel.width * defaultLevel.height;
 const TRANSITION_MS = 260;
-const BEST_STORAGE_KEY = `tether:${defaultLevel.id}:best-pulls`;
-const tiles = Array.from({ length: CELL_COUNT }, (_, index) => ({
-	x: index % defaultLevel.width,
-	y: Math.floor(index / defaultLevel.width),
-}));
+const normalLevels = levels;
+const normalSessions = ref<Record<string, Session>>(
+	Object.fromEntries(
+		normalLevels.map((level) => [
+			level.id,
+			beginSession(level, loadBestPulls(level.id)),
+		]),
+	),
+);
+const normalAnnouncements = ref<Record<string, string>>(
+	Object.fromEntries(
+		normalLevels.map((level) => [
+			level.id,
+			"Walk to a dotted floor tile, then select a highlighted box to preview its pull.",
+		]),
+	),
+);
+const normalSelectedDirections = ref<Record<string, Direction | null>>(
+	Object.fromEntries(normalLevels.map((level) => [level.id, null])),
+);
+const tutorialSession = ref<Session>(beginSession(tutorialLevel));
+const tutorialAnnouncement = ref(
+	"Walk to the glowing firing tile to line up your first tether.",
+);
+const tutorialSelectedDirection = ref<Direction | null>(null);
+const selectedNormalLevelId = ref(defaultLevel.id);
+const isTutorial = ref(false);
+const hasEntered = ref(false);
+const showGuide = ref(false);
+const entryStart = ref<HTMLButtonElement | null>(null);
+const gameRoot = ref<HTMLElement | null>(null);
+const guideButton = ref<HTMLButtonElement | null>(null);
+const tetherEndpoint = ref<{ x: number; y: number } | null>(null);
+const engagedPull = ref<LegalPull | null>(null);
+let settleTimer: number | undefined;
+let tetherFrame: number | undefined;
 
 type LegalSelection = Readonly<{
 	direction: Direction;
 	pull: LegalPull;
 }>;
 
-const session = ref<Session>(beginSession(defaultLevel, loadBestPulls()));
-const selectedDirection = ref<Direction | null>(null);
-const engagedPull = ref<LegalPull | null>(null);
-const tetherEndpoint = ref<{ x: number; y: number } | null>(null);
-const hasEntered = ref(false);
-const showGuide = ref(false);
-const entryStart = ref<HTMLButtonElement | null>(null);
-const gameRoot = ref<HTMLElement | null>(null);
-const guideButton = ref<HTMLButtonElement | null>(null);
-const announcement = ref(
-	"Walk to a dotted floor tile, then select a highlighted box to preview its pull.",
+const session = computed<Session>({
+	get: () =>
+		isTutorial.value
+			? tutorialSession.value
+			: normalSessions.value[selectedNormalLevelId.value]!,
+	set: (nextSession) => {
+		if (isTutorial.value) {
+			tutorialSession.value = nextSession;
+			return;
+		}
+		normalSessions.value = {
+			...normalSessions.value,
+			[nextSession.level.id]: nextSession,
+		};
+	},
+});
+const selectedDirection = computed<Direction | null>({
+	get: () =>
+		isTutorial.value
+			? tutorialSelectedDirection.value
+			: normalSelectedDirections.value[selectedNormalLevelId.value] ?? null,
+	set: (direction) => {
+		if (isTutorial.value) {
+			tutorialSelectedDirection.value = direction;
+			return;
+		}
+		normalSelectedDirections.value = {
+			...normalSelectedDirections.value,
+			[selectedNormalLevelId.value]: direction,
+		};
+	},
+});
+const announcement = computed<string>({
+	get: () =>
+		isTutorial.value
+			? tutorialAnnouncement.value
+			: normalAnnouncements.value[selectedNormalLevelId.value] ?? "",
+	set: (nextAnnouncement) => {
+		if (isTutorial.value) {
+			tutorialAnnouncement.value = nextAnnouncement;
+			return;
+		}
+		normalAnnouncements.value = {
+			...normalAnnouncements.value,
+			[selectedNormalLevelId.value]: nextAnnouncement,
+		};
+	},
+});
+const levelTiles = computed(() =>
+	Array.from({ length: session.value.level.width * session.value.level.height }, (_, index) => ({
+		x: index % session.value.level.width,
+		y: Math.floor(index / session.value.level.width),
+	})),
 );
-let settleTimer: number | undefined;
-let tetherFrame: number | undefined;
-
 const reachableKeys = computed(
 	() =>
 		new Set(
@@ -73,13 +147,46 @@ const legalSelections = computed<readonly LegalSelection[]>(() => {
 	});
 });
 const selectionPreview = computed<LegalPull | undefined>(() => {
-	if (!selectedDirection.value || session.value.phase !== "READY")
-		return undefined;
+	if (!selectedDirection.value || session.value.phase !== "READY") return undefined;
 	const option = pullOptions.value[selectedDirection.value];
 	return option.kind === "LEGAL" ? option : undefined;
 });
 const isPullAnimating = computed(() => engagedPull.value !== null);
 const hasHistory = computed(() => session.value.history.length > 0);
+const normalLevelNumber = computed(
+	() => normalLevels.findIndex((level) => level.id === selectedNormalLevelId.value) + 1,
+);
+const tutorialAtFiringTile = computed(() =>
+	samePosition(session.value.state.player, tutorialFiringTile),
+);
+const hasExpectedTutorialPreview = computed(() => {
+	const preview = selectionPreview.value;
+	return (
+		isTutorial.value &&
+		selectedDirection.value === tutorialPullDirection &&
+		preview !== undefined &&
+		samePosition(preview.target, tutorialLevel.startBoxes[0]!) &&
+		samePosition(preview.destination, { x: 3, y: 3 })
+	);
+});
+const tutorialGuideTitle = computed(() => {
+	if (session.value.phase === "WON") return "L complete";
+	if (selectionPreview.value) return "Inspect the ghost";
+	return tutorialAtFiringTile.value ? "Choose the distant box" : "Walk to the firing tile";
+});
+const tutorialGuideDetail = computed(() => {
+	if (session.value.phase === "WON") {
+		return "You made the L in one pull. Replay the lesson or return to your room.";
+	}
+	if (selectionPreview.value) {
+		return hasExpectedTutorialPreview.value
+			? "The ghost marks where the box will stop beside you. Confirm Pull when the endpoint makes sense."
+			: "The ghost is this pull’s exact endpoint. Confirm it, or press Escape and inspect another legal box.";
+	}
+	return tutorialAtFiringTile.value
+		? "You are in position. Select the highlighted box across the row to preview its endpoint."
+		: "The glowing ring marks a firing position, not a destination. Walk onto it from any reachable floor tile.";
+});
 const statusTitle = computed(() => {
 	switch (session.value.phase) {
 		case "WON":
@@ -87,7 +194,7 @@ const statusTitle = computed(() => {
 		case "NO_PULLS":
 			return "No pulls remain";
 		default:
-			return "Find your angle";
+			return isTutorial.value ? "Practice tether" : "Find your angle";
 	}
 });
 const statusDetail = computed(() => {
@@ -103,9 +210,13 @@ const statusDetail = computed(() => {
 	}
 });
 
-function loadBestPulls(): number | undefined {
+function bestStorageKey(levelId: string): string {
+	return `tether:${levelId}:best-pulls`;
+}
+
+function loadBestPulls(levelId: string): number | undefined {
 	try {
-		const saved = window.localStorage.getItem(BEST_STORAGE_KEY);
+		const saved = window.localStorage.getItem(bestStorageKey(levelId));
 		if (saved === null) return undefined;
 		const value = Number(saved);
 		return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
@@ -115,9 +226,12 @@ function loadBestPulls(): number | undefined {
 }
 
 function saveBestPulls(bestPulls: number | undefined): void {
-	if (bestPulls === undefined) return;
+	if (isTutorial.value || bestPulls === undefined) return;
 	try {
-		window.localStorage.setItem(BEST_STORAGE_KEY, String(bestPulls));
+		window.localStorage.setItem(
+			bestStorageKey(session.value.level.id),
+			String(bestPulls),
+		);
 	} catch {
 		// Storage is optional; play must continue when it is unavailable.
 	}
@@ -179,7 +293,9 @@ function walkTo(tile: { x: number; y: number }): void {
 		return;
 	}
 	session.value = completeAnimation(result.session);
-	announcement.value = `Standing at column ${tile.x + 1}, row ${tile.y + 1}. Select a highlighted box to preview its pull.`;
+	announcement.value = isTutorial.value
+		? `Standing at column ${tile.x + 1}, row ${tile.y + 1}. ${tutorialGuideDetail.value}`
+		: `Standing at column ${tile.x + 1}, row ${tile.y + 1}. Select a highlighted box to preview its pull.`;
 }
 
 function walkDirection(direction: Direction): void {
@@ -243,16 +359,36 @@ function restartLevel(): void {
 	if (isPullAnimating.value) return;
 	window.clearTimeout(settleTimer);
 	clearTetherAnimation();
-	session.value =
-		session.value.phase === "WON"
-			? replay(session.value)
-			: reset(session.value);
+	session.value = restart(session.value);
 	selectedDirection.value = null;
-	announcement.value = "Room reset. Your best score is safe.";
+	announcement.value = isTutorial.value
+		? "Lesson reset. Walk to the glowing firing tile."
+		: "Room reset. Your best score is safe.";
 }
 
-function enterGame(): void {
+function enterNormalRoom(): void {
 	hasEntered.value = true;
+	nextTick(() => gameRoot.value?.focus());
+}
+
+function enterTutorial(): void {
+	if (isPullAnimating.value) return;
+	isTutorial.value = true;
+	hasEntered.value = true;
+	nextTick(() => gameRoot.value?.focus());
+}
+
+function exitTutorial(): void {
+	if (isPullAnimating.value) return;
+	isTutorial.value = false;
+	nextTick(() => gameRoot.value?.focus());
+}
+
+function selectNormalLevel(event: Event): void {
+	if (isPullAnimating.value) return;
+	const levelId = (event.target as HTMLSelectElement).value;
+	if (!normalSessions.value[levelId]) return;
+	selectedNormalLevelId.value = levelId;
 	nextTick(() => gameRoot.value?.focus());
 }
 
@@ -292,8 +428,7 @@ function hasFocusedNativeControl(): boolean {
 }
 
 function handleKeydown(event: KeyboardEvent): void {
-	if (event.metaKey || event.ctrlKey || event.altKey || !hasEntered.value)
-		return;
+	if (event.metaKey || event.ctrlKey || event.altKey || !hasEntered.value) return;
 
 	if (showGuide.value) {
 		if (event.key === "Escape") {
@@ -395,12 +530,16 @@ onBeforeUnmount(() => {
 				</p>
 
 				<div class="entry-actions">
-					<button ref="entryStart" type="button" class="start-button" @click="enterGame">
+					<button ref="entryStart" type="button" class="start-button" @click="enterNormalRoom">
 						Enter the room
 						<span aria-hidden="true">→</span>
 					</button>
-					<p v-if="session.bestPulls !== undefined">
-						Personal best · {{ session.bestPulls }} {{ pluralisePull(session.bestPulls) }}
+					<button type="button" class="tutorial-button" @click="enterTutorial">
+						Start the guided tutorial
+					</button>
+					<p v-if="normalSessions[selectedNormalLevelId]?.bestPulls !== undefined">
+						Personal best · {{ normalSessions[selectedNormalLevelId]?.bestPulls }}
+						{{ pluralisePull(normalSessions[selectedNormalLevelId]?.bestPulls ?? 0) }}
 					</p>
 				</div>
 			</div>
@@ -425,7 +564,7 @@ onBeforeUnmount(() => {
 						<small>then choose Pull</small>
 					</div>
 				</div>
-				<p class="entry-note">Select highlighted boxes to preview their fixed destination.</p>
+				<p class="entry-note">New here? The guided tutorial marks a firing position and walks you through one pull.</p>
 			</div>
 		</div>
 	</section>
@@ -440,15 +579,26 @@ onBeforeUnmount(() => {
 				<button ref="guideButton" type="button" class="guide-button" @click="openGuide">
 					How to play <kbd>?</kbd>
 				</button>
-				<div class="scoreboard" aria-label="Score">
+				<label v-if="!isTutorial" class="level-select">
+					<span>Room</span>
+					<select :value="selectedNormalLevelId" :disabled="isPullAnimating" @change="selectNormalLevel">
+						<option v-for="(level, index) in normalLevels" :key="level.id" :value="level.id">
+							{{ index + 1 }} · {{ level.title }}
+						</option>
+					</select>
+				</label>
+				<button v-else type="button" class="tutorial-exit" :disabled="isPullAnimating" @click="exitTutorial">
+					Resume room
+				</button>
+				<div class="scoreboard" :aria-label="isTutorial ? 'Tutorial score' : 'Score'">
 					<div>
-						<span>Pulls</span>
+						<span>{{ isTutorial ? "Lesson pulls" : "Pulls" }}</span>
 						<strong>{{ session.state.pulls }}</strong>
 					</div>
 					<i aria-hidden="true"></i>
 					<div>
-						<span>Best</span>
-						<strong>{{ session.bestPulls ?? "—" }}</strong>
+						<span>{{ isTutorial ? "Goal" : "Best" }}</span>
+						<strong>{{ isTutorial ? "L" : session.bestPulls ?? "—" }}</strong>
 					</div>
 				</div>
 			</div>
@@ -458,51 +608,61 @@ onBeforeUnmount(() => {
 
 		<section id="game" class="game-layout" aria-labelledby="level-title" :inert="showGuide">
 			<div class="game-copy">
-				<p class="eyebrow">Room 01 · Shape study</p>
-				<h1 id="level-title">Verified<br /><em class="game-title-emphasis">enclosure</em></h1>
+				<p class="eyebrow">
+					{{ isTutorial ? "Guided practice · One pull" : `Room ${normalLevelNumber} · Shape study` }}
+				</p>
+				<h1 id="level-title"><em class="game-title-emphasis">{{ session.level.title }}</em></h1>
 				<p class="lede">
-					Walk anywhere you can reach. Select a visible box to preview its fixed
-					destination, then Pull until all three make an L.
+					{{
+						isTutorial
+							? "Use the marked tile to see how your position fixes a pull’s endpoint."
+							: "Walk anywhere you can reach. Select a visible box to preview its fixed destination, then Pull until all three make an L."
+					}}
 				</p>
 
-				<div class="instruction-list" aria-label="How to play">
+				<aside v-if="isTutorial" class="tutorial-guide" aria-live="polite" aria-atomic="true">
+					<p class="tutorial-guide-label">Guided step</p>
+					<strong>{{ tutorialGuideTitle }}</strong>
+					<p>{{ tutorialGuideDetail }}</p>
+					<div class="tutorial-actions">
+						<button type="button" :disabled="isPullAnimating" @click="restartLevel">
+							{{ session.phase === "WON" ? "Replay lesson" : "Reset lesson" }}
+						</button>
+						<button type="button" :disabled="isPullAnimating" @click="exitTutorial">
+							{{ session.phase === "WON" ? "Continue to room" : "Skip tutorial" }}
+						</button>
+					</div>
+				</aside>
+
+				<div v-else class="instruction-list" aria-label="How to play">
 					<div>
 						<span class="step-number">01</span>
-						<p>
-							<strong>Choose your position.</strong> Click dotted floor, or walk with
-							arrows / W A S D.
-						</p>
+						<p><strong>Choose your position.</strong> Click dotted floor, or walk with arrows / W A S D.</p>
 					</div>
 					<div>
 						<span class="step-number">02</span>
-						<p>
-							<strong>Select, then Pull.</strong> Choose a highlighted box to preview
-							its exact destination before confirming Pull.
-						</p>
+						<p><strong>Select, then Pull.</strong> Choose a highlighted box to preview its exact destination before confirming Pull.</p>
 					</div>
 					<div>
 						<span class="step-number">03</span>
-						<p>
-							<strong>Make the shape.</strong>
-							<span class="mini-l" role="img" aria-label="an L made from three squares">
-								<i></i><i></i><i></i>
-							</span>
-						</p>
+						<p><strong>Make the shape.</strong> <span class="mini-l" role="img" aria-label="an L made from three squares"><i></i><i></i><i></i></span></p>
 					</div>
 				</div>
 			</div>
 
 			<div class="play-area">
 				<GameBoard
-					:level="defaultLevel"
+					:level="session.level"
 					:session="session"
-					:tiles="tiles"
+					:tiles="levelTiles"
 					:reachable-keys="reachableKeys"
 					:legal-selections="legalSelections"
 					:selected-direction="selectedDirection"
 					:selection-preview="selectionPreview"
 					:engaged-pull="engagedPull"
 					:tether-endpoint="tetherEndpoint"
+					:firing-tile="isTutorial ? tutorialFiringTile : undefined"
+					firing-tile-label="Tutorial firing tile. Walk here to align the tether."
 					@walk="walkTo"
 					@select="selectPull"
 				/>

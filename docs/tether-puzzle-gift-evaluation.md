@@ -8,22 +8,30 @@ Tether is being made as a gift for one person who likes puzzles, with enough gam
 
 Its strongest interaction is already present: **the player's position determines where a box stops, but placing that box changes where the player can stand next.** That creates a coherent spatial puzzle rather than a collection of arbitrary restrictions.
 
-The qualification is important: interesting choices have been demonstrated on **one board**, not yet across a level set. Four or five levels is a recommended scope, not a demonstrated content ceiling or a promise that the existing rules will produce that many distinct puzzles.
+The qualification is important: deep placement and access choices have been
+demonstrated on a **historical enclosure example**, not yet across a complete
+authored set. The current source-level inventory, including the selected default
+and any practice layout, is maintained in the design draft. A short sequence is
+a recommendation, not a claim that a campaign already exists or that the rules
+will automatically yield a particular number of distinct puzzles.
 
-This evaluation applies the [gameplay best-practices guide](tether-gameplay-best-practices.md) to the CLI experience. The recipient's specific puzzle preferences and experience with grid puzzles are unknown; no difficulty rating is assumed from their general interest in puzzles.
+This evaluation applies the [gameplay best-practices guide](tether-gameplay-best-practices.md)
+to the implemented rules and historical CLI evidence. The recipient's specific
+puzzle preferences and experience with grid puzzles are unknown; no difficulty
+rating is assumed from their general interest in puzzles.
 
 ## Evaluation against the practices
 
 | Practice | Assessment | Implication for this gift |
 |---|---|---|
 | Clear, memorable central idea | **Strong** | Choosing the stopping position through the player's position, then forming an L, is compact enough to carry a short experience. |
-| Depth from interacting rules | **Promising, demonstrated locally** | The enclosure and winning alternatives show placement, targeting, and access interacting meaningfully. |
-| Consistent, predictable behaviour | **Strong rules; incomplete explanation** | Pulls behave consistently. The CLI help does not explain the adjacent stopping position or the L objective; understanding these should not require an external briefing. |
-| Meaningful choices | **Present on the current board** | A pull can improve the apparent arrangement while destroying access. That is a consequential choice, not an arbitrary penalty. |
-| Learning through discoveries | **Good material, not yet a progression** | Endpoint choice, cross-axis assembly, and access order provide different ideas to learn. They should not all arrive as one opening challenge. |
+| Depth from interacting rules | **Promising, historically demonstrated** | The enclosure and winning alternatives show placement, targeting, and access interacting meaningfully; they do not assess the current default by themselves. |
+| Consistent, predictable behaviour | **Strong rules; presentation must explain them** | Pulls behave consistently. The adjacent stopping position, first-visible target, opaque pillar blocking, and L objective should be clear at the point of play. |
+| Meaningful choices | **Demonstrated in a historical example** | A pull can improve the apparent arrangement while destroying access. That is a consequential choice, not an arbitrary penalty. |
+| Learning through discoveries | **Material for an arc, not proof of one** | Endpoint choice, cross-axis assembly, and access order need distinct authored rooms rather than one opening challenge. |
 | Forgiving experimentation | **Strong** | Free walking and pull-based undo allow exploration without tedious recovery. This particularly suits a gift. |
-| Difficulty and variety | **Still unproven across levels** | Two different three-pull wins are encouraging, but neither those wins nor the enclosure establishes how difficult the board will feel to the recipient. |
-| Completion and refinement | **Good secondary loop** | Improving from four pulls to three felt natural during play. Optimisation should remain optional rather than become a condition for properly finishing. |
+| Difficulty and variety | **Requires per-room graph evidence and play** | Historical three-pull wins and the enclosure do not establish how any authored sequence will feel to the recipient. |
+| Completion and refinement | **A historical secondary loop** | Improving the historical enclosure replay from four pulls to three suggests refinement can be optional rather than a condition for finishing. |
 
 These are design judgements grounded in the observed game, not findings from recipient play or a broader audience study.
 
@@ -37,13 +45,15 @@ That is a useful central insight. **Explain the movement rule; leave its useful 
 
 ### Progress is not simply bringing boxes closer together
 
-The current enclosure board provides a concrete example:
+The historical enclosure example provides a concrete counterexample:
 
 - Pulling the upper-left box inward creates a potentially useful placement.
 - Pulling the lower box toward the player afterward encloses the player without winning.
 - A different continuation after the same first pull wins.
 
-This makes the board about **order and future access**, not merely gathering three objects. Preserve that distinction when choosing the remaining levels.
+This establishes that the rules can express order and future access, not merely
+gathering objects. It does not make the example a current room, a first level,
+or a demonstrated player-facing lesson.
 
 ### Undo supports the intended experience
 
@@ -59,34 +69,42 @@ For this gift, the recipient should feel invited to investigate rather than exam
 
 For a short gift, this is manageable. Each board only needs to contribute something distinct; there is no need to introduce another mechanic merely to manufacture variety.
 
-### The current enclosure board is a questionable introduction
+### The historical enclosure is not an introduction
 
-It combines the endpoint rule, an existing box adjacency, pillar obstruction, and a non-winning trap.
+It combines the endpoint rule, an existing box adjacency, opaque-pillar
+obstruction, and a non-winning trap. Fresh exhaustive analysis finds only 43
+no-win states among 10,500 reachable canonical states (0.41%), so the trap
+should be retained as a documented counterexample, not relied on as a likely
+discovery.
 
-**Recommendation:** place it after a simpler introduction rather than make it the recipient's first encounter. Establish confidence in the rules before asking them to anticipate loss of access.
-
-The CLI's `NO_PULLS` label is accurate but does not explain recovery. A message such as “No moving pulls remain. Undo or reset.” would make the consequence understandable without revealing a solution. This is a recommendation, not an implemented change.
+**Recommendation:** place any intentional enclosure only after simpler,
+independently verified rooms establish the rules. Explain `NO_PULLS` as no moving
+pull remaining with undo/reset available; do not rely on a raw phase label.
 
 ### Optimisation could overshadow completion
 
 A prominent par can turn “I solved your puzzle” into “I solved it, but apparently badly.”
 
-Celebrate any valid solution first. Show a personal best unobtrusively; make a minimum-pull challenge optional. Only describe a score as the minimum once that has actually been established. The observed three-pull solutions do not, by themselves, prove optimality.
+Celebrate any valid solution first. Show a personal best unobtrusively; make a
+minimum-pull challenge optional. Only describe a score as the minimum once
+exhaustive analysis has established it. The historical three-pull solutions
+alone did not prove their score optimal; the later graph audit did.
 
-## Recommended shape of the level set
+## Recommended content shape
 
-The following are **roles for levels, not validated layouts or a committed level count**:
+The following are **authoring roles, not a claim that a full campaign exists**:
 
-| Position | Role | Intended experience |
+| Segment | Role | Required evidence or experience |
 |---|---|---|
-| 1 | **An invitation** | One satisfying pull completes an L and establishes the stopping rule. |
-| 2 | **A discovery** | The recipient chooses an approach that creates cross-axis adjacency. |
-| 3 | **A sequencing puzzle** | A useful placement depends on preserving a later firing position. The current enclosure board is a candidate. |
-| 4 | **A finale** | Familiar ideas combine so the recipient applies what they have learned, rather than encounters a surprise rule. |
+| Separate practice | **Guided tutorial** | Walk to a firing tile, inspect the first visible target and adjacent endpoint, then explicitly pull. It is not a scored normal room. |
+| Teaching arc | **First success** | A one-pull L establishes the stopping rule. |
+| Teaching arc | **Assembly and occlusion** | Cross-axis adjacency, then opaque-pillar blocking with a legible alternate firing angle. |
+| Teaching arc | **Commitment and order** | Edge commitment and later-firing-tile preservation, with undo available. |
+| Teaching arc | **Recoverable enclosure** | Only after the relevant rules are learned; validate the branch and its legibility separately. |
+| Application | **Two to five normal rooms** | Combine known rules without presenting a new mechanic; each needs a valid source definition, replay, solvability, par, and canonical shortest-solution count. |
 
-A fifth level earns its place only if it offers another distinct insight—for example, a meaningful edge commitment or temporary displacement. **Four good levels are better than five with a repetitive extra board.**
-
-These roles are not a universal difficulty ranking. The actual geometry, plausible alternatives, and clarity of each board will determine how it feels.
+These roles are not a universal difficulty ranking. The actual geometry,
+plausible alternatives, and clarity of each room determine how it feels.
 
 ## What changes because it is a gift
 
@@ -105,18 +123,26 @@ Do not assume that liking puzzles means wanting a timer, harsh penalties, a mand
 
 Keep the two verbs, three identical boxes, deterministic pulls, free walking, and unlimited undo.
 
-The next source of quality should be **a short sequence of distinct insights**, not additional mechanics. The current game has enough substance to justify that direction. The remaining question is whether the other boards each earn their place.
+The next source of quality should be **a verified sequence of distinct insights
+followed by normal application rooms**, not additional mechanics. The remaining
+question is whether each authored room earns its place through its replay and
+graph evidence, then through player experience.
 
 ## Evidence and limits
 
-This assessment draws on the [best-practices guide and its source trail](tether-gameplay-best-practices.md), the [existing gameplay design](../design-draft.md), and actual `pnpm cli` play:
+This assessment draws on the [best-practices guide and its source trail](tether-gameplay-best-practices.md),
+the [existing gameplay design](../design-draft.md), and **historical** `pnpm cli`
+play of the enclosure:
 
-- Completed the current level in four pulls, then improved to three.
-- Reproduced the documented two-pull enclosure, which reported `NO_PULLS`.
+- Completed the historical enclosure in four pulls, then improved to three.
+- Reproduced its documented two-pull enclosure, which reported `NO_PULLS`.
 - Used undo to restore `READY` at one pull.
 - Completed two different three-pull solutions.
-- Verified reset preserving the best score within the running CLI session.
+- Verified reset preserving the best score within that running CLI session.
 
-The exact enclosure and solution sequences are recorded in the best-practices guide. Its command examples were also executed directly through the CLI.
-
-No recipient play, full level sequence, optimality proof, or general human difficulty measurement underlies this evaluation. Proposed level roles, presentation changes, and personalisation are recommendations only. This document changes neither gameplay nor the interface.
+The exact historical enclosure and solution sequences are recorded in the
+best-practices guide. Fresh engine replay and full-graph analysis now establish
+its par 3 and terminal branch properties, but no recipient play, full authored
+sequence, or general human difficulty measurement underlies this evaluation.
+Proposed roles and presentation changes are recommendations only. This document
+changes neither gameplay nor the interface.

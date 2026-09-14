@@ -1,7 +1,14 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { BOARD_SIZE, isBoardCoordinate, reachableTiles } from "./board";
-import { type Position, parseLevel } from "./model";
+import {
+	BOARD_SIZE,
+	BOX_COUNT,
+	isBoardCoordinate,
+	isWon,
+	positionKey,
+	reachableTiles,
+} from "./board";
+import { parseLevel } from "./model";
 
 describe("board coordinates", () => {
 	it("accepts every coordinate on the board", () => {
@@ -35,6 +42,21 @@ describe("board coordinates", () => {
 	});
 });
 
+describe("win state", () => {
+	it("rejects a near-corner shape with fewer than the required boxes", () => {
+		expect(
+			isWon({
+				player: { x: 0, y: 0 },
+				boxes: Array.from({ length: BOX_COUNT - 1 }, (_, x) => ({
+					x,
+					y: 0,
+				})),
+				pulls: 0,
+			}),
+		).toBe(false);
+	});
+});
+
 describe("reachable tiles", () => {
 	it("flood-fills only the player's floor region", () => {
 		const level = parseLevel({
@@ -58,7 +80,3 @@ describe("reachable tiles", () => {
 		);
 	});
 });
-
-function positionKey(position: Position): string {
-	return `${position.x},${position.y}`;
-}

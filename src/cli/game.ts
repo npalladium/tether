@@ -4,8 +4,7 @@ import {
 	DIRECTIONS,
 	type Direction,
 	pull,
-	replay,
-	reset,
+	restart,
 	type Session,
 	undo,
 	walk,
@@ -61,6 +60,15 @@ export function renderSession(session: Session): string {
 		`Phase: ${session.phase}`,
 		`Pulls: ${state.pulls} | Best: ${session.bestPulls ?? "—"}`,
 	);
+	if (session.phase === "NO_PULLS") {
+		if (session.history.length > 0) {
+			lines.push(
+				"No legal pulls remain. Use undo to recover or reset to restart the level.",
+			);
+		} else {
+			lines.push("No legal pulls remain. Use reset to restart the level.");
+		}
+	}
 	return `${lines.join("\n")}\n`;
 }
 
@@ -78,10 +86,7 @@ export function executeInput(session: Session, input: string): InputResult {
 		return { kind: "CONTINUE", session: undo(session) };
 	}
 	if (command === "reset" && words.length === 1) {
-		return {
-			kind: "CONTINUE",
-			session: session.phase === "WON" ? replay(session) : reset(session),
-		};
+		return { kind: "CONTINUE", session: restart(session) };
 	}
 	if (command === "walk") {
 		return executeWalk(session, words);
@@ -175,6 +180,8 @@ function isDirection(value: string | undefined): value is Direction {
 
 function messageForRejection(reason: string): string {
 	switch (reason) {
+		case "ALREADY_THERE":
+			return "You are already on that tile.";
 		case "UNREACHABLE":
 			return "That tile is not reachable.";
 		case "NO_TARGET":
