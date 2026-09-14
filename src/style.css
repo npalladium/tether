@@ -212,7 +212,7 @@ a:focus-visible {
 	width: min(100%, 29rem);
 	aspect-ratio: 1;
 	border: 1px solid rgb(238 234 224 / 16%);
-	border-radius: 50%;
+	border-radius: 0;
 	background:
 		linear-gradient(
 			90deg,
@@ -383,6 +383,10 @@ kbd {
 	height: 1.75rem;
 	border: 2px solid var(--aqua);
 	border-radius: 50%;
+}
+
+.entry-topbar .wordmark-mark {
+	border-radius: 0;
 }
 
 .wordmark-mark::before,
