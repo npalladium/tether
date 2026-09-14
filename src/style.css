@@ -665,6 +665,8 @@ kbd {
 
 .eyebrow {
 	margin: 0 0 1.6rem;
+	color: var(--aqua);
+}
 
 .tutorial-guide {
 	margin-top: clamp(1.5rem, 4vh, 2.75rem);
@@ -726,8 +728,6 @@ kbd {
 .tutorial-exit:disabled {
 	opacity: 0.42;
 	cursor: not-allowed;
-}
-	color: var(--aqua);
 }
 
 .guide-eyebrow {
@@ -1475,6 +1475,19 @@ h1 {
 	.entry-topbar,
 	.topbar {
 		min-height: 4.75rem;
+	}
+
+	.level-select > span {
+		display: none;
+	}
+
+	.level-select select {
+		max-width: 8.4rem;
+	}
+
+	.tutorial-exit {
+		padding: 0.55rem 0.7rem;
+		font-size: 0.65rem;
 	}
 
 	.entry-edition {

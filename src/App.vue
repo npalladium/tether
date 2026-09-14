@@ -20,7 +20,7 @@ import {
 	undo,
 	walk,
 } from "./game";
-import { defaultLevel, levels } from "./level";
+import { defaultLevel, levelGroups, levels } from "./level";
 import {
 	tutorialFiringTile,
 	tutorialLevel,
@@ -582,9 +582,11 @@ onBeforeUnmount(() => {
 				<label v-if="!isTutorial" class="level-select">
 					<span>Room</span>
 					<select :value="selectedNormalLevelId" :disabled="isPullAnimating" @change="selectNormalLevel">
-						<option v-for="(level, index) in normalLevels" :key="level.id" :value="level.id">
-							{{ index + 1 }} · {{ level.title }}
-						</option>
+						<optgroup v-for="group in levelGroups" :key="group.title" :label="group.title">
+							<option v-for="level in group.levels" :key="level.id" :value="level.id">
+								{{ normalLevels.indexOf(level) + 1 }} · {{ level.title }}
+							</option>
+						</optgroup>
 					</select>
 				</label>
 				<button v-else type="button" class="tutorial-exit" :disabled="isPullAnimating" @click="exitTutorial">
