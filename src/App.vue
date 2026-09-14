@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import type { AssistanceMode } from "./assistance/types";
+import AssistanceDialog from "./components/AssistanceDialog.vue";
 import GameBoard from "./components/GameBoard.vue";
 import GameControls from "./components/GameControls.vue";
 import GuideDialog from "./components/GuideDialog.vue";
@@ -57,6 +59,12 @@ const selectedNormalLevelId = ref(defaultLevel.id);
 const isTutorial = ref(false);
 const hasEntered = ref(false);
 const showGuide = ref(false);
+const assistance = ref<{
+	mode: AssistanceMode;
+	level: Session["level"];
+	state: Session["state"];
+} | null>(null);
+const assistanceTrigger = ref<HTMLButtonElement | null>(null);
 const entryStart = ref<HTMLButtonElement | null>(null);
 const gameRoot = ref<HTMLElement | null>(null);
 const guideButton = ref<HTMLButtonElement | null>(null);
@@ -161,6 +169,9 @@ const selectionPreview = computed<LegalPull | undefined>(() => {
 });
 const isPullAnimating = computed(() => engagedPull.value !== null);
 const hasHistory = computed(() => session.value.history.length > 0);
+const modalIsOpen = computed(
+	() => showGuide.value || assistance.value !== null,
+);
 const normalLevelNumber = computed(
 	() =>
 		normalLevels.findIndex(
@@ -416,6 +427,31 @@ function closeGuide(): void {
 	nextTick(() => guideButton.value?.focus());
 }
 
+function copyAssistanceState(current: Session["state"]): Session["state"] {
+	return {
+		player: { ...current.player },
+		boxes: current.boxes.map((box) => ({ ...box })),
+		pulls: current.pulls,
+	};
+}
+
+function openAssistance(
+	mode: AssistanceMode,
+	trigger: HTMLButtonElement,
+): void {
+	if (isPullAnimating.value) return;
+	assistanceTrigger.value = trigger;
+	assistance.value = {
+		mode,
+		level: session.value.level,
+		state: copyAssistanceState(session.value.state),
+	};
+}
+
+function closeAssistance(): void {
+	assistance.value = null;
+	nextTick(() => assistanceTrigger.value?.focus());
+}
 function rejectionMessage(reason: string): string {
 	switch (reason) {
 		case "NO_TARGET":
@@ -446,14 +482,14 @@ function handleKeydown(event: KeyboardEvent): void {
 	if (event.metaKey || event.ctrlKey || event.altKey || !hasEntered.value)
 		return;
 
-	if (showGuide.value) {
+	if (showGuide.value || assistance.value !== null) {
 		if (event.key === "Escape") {
 			event.preventDefault();
-			closeGuide();
+			if (assistance.value !== null) closeAssistance();
+			else closeGuide();
 		}
 		return;
 	}
-
 	if (event.key === "?" || (event.key === "/" && event.shiftKey)) {
 		event.preventDefault();
 		openGuide();
@@ -586,7 +622,7 @@ onBeforeUnmount(() => {
 	</section>
 
 	<main v-else ref="gameRoot" class="game-shell" tabindex="-1">
-		<header class="topbar" :inert="showGuide">
+		<header class="topbar" :inert="modalIsOpen">
 			<div class="wordmark" aria-label="Tether">
 				<span class="wordmark-mark" aria-hidden="true"></span>
 				<span>Tether</span>
@@ -639,8 +675,15 @@ onBeforeUnmount(() => {
 		</header>
 
 		<GuideDialog v-if="showGuide" @close="closeGuide" />
+		<AssistanceDialog
+			v-if="assistance"
+			:mode="assistance.mode"
+			:level="assistance.level"
+			:state="assistance.state"
+			@close="closeAssistance"
+		/>
 
-		<section id="game" class="game-layout" aria-labelledby="level-title" :inert="showGuide">
+		<section id="game" class="game-layout" aria-labelledby="level-title" :inert="modalIsOpen">
 			<div class="game-copy">
 				<p class="eyebrow">
 					{{ isTutorial ? "Guided practice · One pull" : `Room ${normalLevelNumber} · Shape study` }}
@@ -710,6 +753,7 @@ onBeforeUnmount(() => {
 					@pull="pullSelected"
 					@undo="undoLastPull"
 					@restart="restartLevel"
+					@assist="openAssistance"
 				/>
 			</div>
 		</section>

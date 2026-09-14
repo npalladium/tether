@@ -14,7 +14,12 @@ const emit = defineEmits<{
 	pull: [];
 	undo: [];
 	restart: [];
+	assist: [mode: "hint" | "solution", trigger: HTMLButtonElement];
 }>();
+
+function requestAssistance(mode: "hint" | "solution", event: MouseEvent): void {
+	emit("assist", mode, event.currentTarget as HTMLButtonElement);
+}
 </script>
 
 <template>
@@ -52,6 +57,22 @@ const emit = defineEmits<{
 		</div>
 
 		<div class="utility-controls">
+			<button
+				type="button"
+				class="assistance-control"
+				:disabled="isPullAnimating"
+				@click="requestAssistance('hint', $event)"
+			>
+				Hint
+			</button>
+			<button
+				type="button"
+				class="assistance-control"
+				:disabled="isPullAnimating"
+				@click="requestAssistance('solution', $event)"
+			>
+				Show solution
+			</button>
 			<button type="button" :disabled="isPullAnimating || !hasHistory" @click="emit('undo')">
 				<svg viewBox="0 0 20 20" aria-hidden="true">
 					<path d="M8 5 4 9l4 4M5 9h6a5 5 0 1 1 0 10" />

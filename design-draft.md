@@ -105,8 +105,9 @@ Winning is checked first. A completed L with the player trapped in its crook
 is still a win; escaping afterward is not part of the goal. Non-winning traps
 are possible when boxes and pillars seal off the player; see §1.8.
 
-**[OPEN] Additional assistance:** whether to offer solver-backed unsolvability
-warnings or hints. Neither is required for the initial prototype.
+**On-demand assistance:** Hint and Show solution run a solver from a snapshot
+of the current board. Only an exhausted search reports no winning continuation;
+the normal `NO_PULLS` advisory remains independent of this optional assistance.
 
 ## 1.6 Verbs and scope
 
@@ -134,6 +135,16 @@ hand-authored boards exposes a specific limitation worth addressing.
   survives undo, reset, and replay within that session. Persistence or score
   separation between sessions is an interface concern, not a progression API.
 - No timer.
+- Hint reveals a route-specific strategic nudge, then a box and destination,
+  then the exact firing position and direction with a read-only preview.
+  Each stronger hint is explicitly requested; nudges describe one possible
+  route, not a compulsory move.
+- Show solution offers up to three distinct shortest routes from the current
+  state. The viewer shows each firing position, target, endpoint, and final L.
+  It is a representative sample, not an enumeration of all solutions.
+- Assistance never plays moves or changes score, undo history, room selection,
+  or tutorial progress. Closing cancels pending work and restores focus.
+  Errors offer a retry; an unsolvable position suggests returning to undo/reset.
 
 Irreversible placements make undo important. Probing is allowed; whether players
 prefer probing to planning is a playtesting question, not a reason to limit undo.
@@ -481,8 +492,12 @@ session rather than an in-engine progression transition.
 
 ## 2.7 Solver and analysis
 
-Used offline for par and candidate metrics. Solver-backed hints and
-unsolvability warnings are optional extensions, not dependencies of NO_PULLS.
+Offline graph analysis establishes par and candidate metrics. The optional
+in-browser assistant separately searches on demand in a cancellable worker,
+using the same resolver and reachability rules. It canonicalizes unordered box
+positions plus the player's reachable component, minimizes pulls (walking is
+free), and replays displayed routes through the session engine. It is not a
+dependency of `NO_PULLS` and does not compute full-graph authoring metrics.
 
 ```
 successors(level, s):

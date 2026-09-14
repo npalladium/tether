@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, useId } from "vue";
 import {
 	type Direction,
 	isOccupied,
@@ -28,12 +28,16 @@ const props = defineProps<{
 	tetherEndpoint: Position | null;
 	firingTile?: Position;
 	firingTileLabel?: string;
+	readOnly?: boolean;
+	boardLabel?: string;
+	boardDescription?: string;
 }>();
 
 const emit = defineEmits<{
 	walk: [tile: Position];
 	select: [direction: Direction];
 }>();
+const instructionsId = `board-instructions-${useId()}`;
 
 const rowNumbers = computed(() =>
 	Array.from({ length: props.level.height }, (_, index) => index),
@@ -56,6 +60,7 @@ function isReachable(tile: Position): boolean {
 
 function isWalkTarget(tile: Position): boolean {
 	return (
+		!props.readOnly &&
 		props.session.phase === "READY" &&
 		isReachable(tile) &&
 		!isOccupied(props.level, props.session.state, tile) &&
@@ -68,6 +73,16 @@ function positionStyle(position: Position): Record<string, string> {
 		left: `${(position.x / props.level.width) * 100}%`,
 		top: `${(position.y / props.level.height) * 100}%`,
 	};
+}
+
+function boxPosition(box: Position): Position {
+	if (
+		props.engagedPull !== null &&
+		samePosition(props.engagedPull.destination, box)
+	) {
+		return props.tetherEndpoint ?? props.engagedPull.target;
+	}
+	return box;
 }
 
 function isFiringTile(tile: Position): boolean {
@@ -114,12 +129,11 @@ function boxTargetLabel(selection: LegalSelection): string {
 		<table
 			class="board"
 			:class="{ 'is-settling': engagedPull !== null }"
-			aria-describedby="board-instructions"
+			:aria-describedby="instructionsId"
 		>
-			<caption class="sr-only">Tether board</caption>
+			<caption class="sr-only">{{ boardLabel ?? "Tether board" }}</caption>
 			<thead class="sr-only">
 				<tr>
-					<th scope="col">Row</th>
 					<th v-for="column in columnNumbers" :key="column" scope="col">
 						Column {{ column + 1 }}
 					</th>
@@ -127,7 +141,6 @@ function boxTargetLabel(selection: LegalSelection): string {
 			</thead>
 			<tbody>
 				<tr v-for="row in rowNumbers" :key="row">
-					<th scope="row" class="sr-only">Row {{ row + 1 }}</th>
 					<td
 						v-for="column in columnNumbers"
 						:key="positionKey(tileAt(column, row))"
@@ -184,7 +197,7 @@ function boxTargetLabel(selection: LegalSelection): string {
 					(selectionPreview && samePosition(selectionPreview.target, box)) ||
 					(engagedPull && samePosition(engagedPull.destination, box)),
 			}"
-			:style="positionStyle(box)"
+			:style="positionStyle(boxPosition(box))"
 			aria-hidden="true"
 		>
 			<span class="box-face"></span>
@@ -216,8 +229,10 @@ function boxTargetLabel(selection: LegalSelection): string {
 		<span class="axis-label axis-x" aria-hidden="true">east →</span>
 		<span class="axis-label axis-y" aria-hidden="true">south →</span>
 	</div>
-	<p id="board-instructions" class="sr-only">
-		Reachable floor tiles are buttons. Use arrow keys or W A S D to move one tile,
-		or Shift with a direction key to select a visible box to pull.
+	<p :id="instructionsId" class="sr-only">
+		{{
+			boardDescription ??
+			"Reachable floor tiles are buttons. Use arrow keys or W A S D to move one tile, or Shift with a direction key to select a visible box to pull."
+		}}
 	</p>
 </template>

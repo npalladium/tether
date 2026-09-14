@@ -608,6 +608,216 @@ kbd {
 	background: var(--paper);
 }
 
+.assistance-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: grid;
+	place-items: center;
+	padding: clamp(0.75rem, 3vw, 2rem);
+	background: rgb(3 11 15 / 78%);
+	backdrop-filter: blur(12px);
+}
+
+.assistance-panel {
+	width: min(100%, 50rem);
+	max-height: calc(100svh - 1.5rem);
+	overflow-y: auto;
+	padding: clamp(1.25rem, 3vw, 2rem);
+	border: 1px solid rgb(237 199 107 / 34%);
+	border-radius: 1.1rem;
+	background:
+		radial-gradient(circle at 85% 10%, rgb(237 199 107 / 8%), transparent 34%),
+		#101c20;
+	box-shadow: 0 2rem 6rem rgb(0 0 0 / 58%);
+}
+
+.assistance-header {
+	display: flex;
+	gap: 1rem;
+	align-items: start;
+	justify-content: space-between;
+}
+
+.assistance-title {
+	margin: 0;
+	font-family: "Playfair Display", Georgia, serif;
+	font-size: clamp(2.15rem, 6vw, 3.75rem);
+	font-weight: 600;
+	letter-spacing: -0.055em;
+	line-height: 0.95;
+}
+
+.assistance-summary,
+.assistance-state p,
+.hint-card p,
+.step-detail,
+.route-choices small {
+	color: var(--muted);
+	font-size: 0.8rem;
+	line-height: 1.6;
+}
+
+.assistance-summary {
+	max-width: 39rem;
+	margin: 1rem 0 1.25rem;
+}
+
+.assistance-state,
+.hint-content,
+.walkthrough-content,
+.route-choices {
+	padding: 1rem;
+	border: 1px solid var(--line);
+	border-radius: 0.85rem;
+	background: rgb(238 234 224 / 3%);
+}
+
+.assistance-state strong {
+	color: var(--paper);
+	font-size: 0.95rem;
+}
+
+.assistance-state p {
+	margin: 0.45rem 0 0;
+}
+
+.assistance-error {
+	border-color: rgb(226 105 81 / 48%);
+}
+
+.assistance-content {
+	display: grid;
+	gap: 0.85rem;
+}
+
+.route-choices {
+	display: grid;
+	gap: 0.7rem;
+}
+
+.route-choices p,
+.hint-route-count,
+.walkthrough-state,
+.exact-hint-preview > p {
+	margin: 0;
+	color: var(--aqua);
+	font-family: "DM Mono", ui-monospace, monospace;
+	font-size: 0.63rem;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.route-choices > div,
+.walkthrough-controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45rem;
+}
+
+.route-choices button,
+.walkthrough-controls button,
+.assistance-action {
+	padding: 0.55rem 0.72rem;
+	border: 1px solid var(--line);
+	border-radius: 0.6rem;
+	color: #b8c3bf;
+	background: transparent;
+	font-size: 0.68rem;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.route-choices button.is-selected,
+.route-choices button:hover,
+.route-choices button:focus-visible,
+.walkthrough-controls button:hover:not(:disabled),
+.walkthrough-controls button:focus-visible:not(:disabled) {
+	border-color: var(--gold);
+	color: var(--ink);
+	background: var(--gold);
+}
+
+.route-choices small {
+	font-size: 0.65rem;
+}
+
+.hint-content,
+.walkthrough-content {
+	display: grid;
+	gap: 0.8rem;
+}
+
+.hint-card {
+	padding: 0.85rem 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.hint-card span {
+	color: var(--gold);
+	font-family: "DM Mono", ui-monospace, monospace;
+	font-size: 0.58rem;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+}
+
+.hint-card h3 {
+	margin: 0.32rem 0 0;
+	color: var(--paper);
+	font-size: 0.92rem;
+}
+
+.hint-card p {
+	margin: 0.35rem 0 0;
+}
+
+.exact-hint-preview {
+	width: min(100%, 19rem);
+	margin: 0 auto;
+}
+
+.exact-hint-preview > p {
+	margin-bottom: 0.5rem;
+	text-align: center;
+}
+
+.walkthrough-state {
+	text-align: center;
+}
+
+.step-detail {
+	max-width: 32rem;
+	margin: 0 auto;
+}
+
+.walkthrough-controls {
+	justify-content: center;
+}
+
+.walkthrough-controls button:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.assistance-action {
+	justify-self: start;
+	border-color: rgb(121 225 194 / 55%);
+	color: var(--aqua);
+}
+
+.assistance-action:hover,
+.assistance-action:focus-visible {
+	border-color: var(--aqua);
+	background: rgb(121 225 194 / 12%);
+}
+
+.assistance-footer {
+	margin-top: 1rem;
+}
+
+.assistance-footer .guide-return {
+	margin-top: 0;
+}
 .scoreboard {
 	display: flex;
 	gap: 1.25rem;
@@ -666,6 +876,9 @@ kbd {
 .eyebrow {
 	margin: 0 0 1.6rem;
 	color: var(--aqua);
+}
+.assistance-header .eyebrow {
+	margin: 0 0 0.55rem;
 }
 
 .tutorial-guide {
@@ -817,11 +1030,20 @@ h1 {
 	margin: 0 auto;
 	padding: 0 0.9rem 0.9rem 0;
 }
+.assistance-panel .board-wrap {
+	width: min(100%, 28rem);
+	padding-right: 0.7rem;
+}
+
+.walkthrough-content > .board-wrap {
+	width: min(100%, 32rem);
+}
 
 .board-surface {
 	position: relative;
 	width: 100%;
 	aspect-ratio: 1;
+	contain: size;
 }
 
 .board {
@@ -829,13 +1051,14 @@ h1 {
 	width: 100%;
 	height: 100%;
 	table-layout: fixed;
+	border-collapse: separate;
 	border-spacing: 0;
-	border: 1px solid rgb(238 234 224 / 18%);
+	border: 0;
 	border-radius: clamp(0.8rem, 2vw, 1.35rem);
 	background: #18282d;
 	box-shadow:
 		0 2.2rem 5rem rgb(1 7 9 / 35%),
-		inset 0 0 0 1px rgb(0 0 0 / 30%);
+		inset 0 0 0 1px rgb(238 234 224 / 18%);
 	isolation: isolate;
 }
 
@@ -947,10 +1170,7 @@ h1 {
 	aspect-ratio: 1;
 	padding: clamp(0.2rem, 0.55vw, 0.55rem);
 	pointer-events: none;
-	transition:
-		left 260ms cubic-bezier(0.22, 1, 0.36, 1),
-		top 260ms cubic-bezier(0.22, 1, 0.36, 1),
-		transform 160ms ease;
+	transition: transform 160ms ease;
 }
 
 .box-target {
@@ -1064,7 +1284,6 @@ h1 {
 
 .box.is-target {
 	z-index: 6;
-	transform: translateY(-3%);
 }
 
 .box.is-target .box-face {
@@ -1127,7 +1346,6 @@ h1 {
 	z-index: 5;
 	width: 100%;
 	height: 100%;
-	padding: clamp(0.42rem, 0.9vw, 0.7rem);
 	pointer-events: none;
 }
 
@@ -1304,6 +1522,7 @@ h1 {
 
 .utility-controls {
 	display: flex;
+	flex-wrap: wrap;
 	grid-column: 1 / -1;
 	gap: 0.65rem;
 }
@@ -1321,6 +1540,11 @@ h1 {
 	font-weight: 600;
 	cursor: pointer;
 	transition: 150ms ease;
+}
+
+.utility-controls .assistance-control {
+	border-color: rgb(121 225 194 / 45%);
+	color: var(--aqua);
 }
 
 .utility-controls svg {
@@ -1480,6 +1704,10 @@ h1 {
 	.topbar {
 		min-height: 4.75rem;
 	}
+	.utility-controls button {
+		flex: 1 1 calc(50% - 0.33rem);
+		justify-content: center;
+	}
 	.topbar .wordmark > span:last-child {
 		display: none;
 	}
@@ -1528,6 +1756,27 @@ h1 {
 	.guide-panel {
 		max-height: calc(100svh - 1.5rem);
 		padding: 1.25rem;
+	}
+
+	.assistance-overlay {
+		padding: 0.5rem;
+	}
+
+	.assistance-panel {
+		max-height: calc(100svh - 1rem);
+		padding: 1rem;
+		border-radius: 0.85rem;
+	}
+
+	.assistance-title {
+		font-size: 2.35rem;
+	}
+
+	.assistance-summary,
+	.assistance-state p,
+	.hint-card p,
+	.step-detail {
+		font-size: 0.72rem;
 	}
 
 	.guide-title {
