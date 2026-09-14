@@ -573,8 +573,8 @@ onBeforeUnmount(() => {
 			<div class="entry-copy">
 				<p class="eyebrow">Three boxes · One shape</p>
 				<h1 id="entry-title" class="entry-title">
-					<span>Where you stand</span>
-					<em class="entry-title-emphasis">is where it stops.</em>
+					<span>Arrange three boxes</span>
+					<em class="entry-title-emphasis">into an L.</em>
 				</h1>
 				<p class="entry-lede">
 					Walk the room, find a clear line, and tether each box toward you. Bring all
@@ -600,9 +600,9 @@ onBeforeUnmount(() => {
 				<div class="entry-diagram" aria-hidden="true">
 					<div class="demo-player"></div>
 					<div class="demo-tether"></div>
-					<div class="demo-box demo-box-a"></div>
-					<div class="demo-box demo-box-b"></div>
-					<div class="demo-box demo-box-c"></div>
+					<div class="piece box demo-box demo-box-a"><span class="box-face"></span></div>
+					<div class="piece box demo-box demo-box-b"><span class="box-face"></span></div>
+					<div class="piece box demo-box demo-box-c"><span class="box-face"></span></div>
 				</div>
 				<div class="entry-controls" aria-label="Game controls">
 					<div class="entry-control">

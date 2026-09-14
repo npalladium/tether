@@ -230,15 +230,11 @@ a:focus-visible {
 		0 2rem 5rem rgb(0 0 0 / 18%);
 }
 
-.demo-player,
-.demo-box {
+.demo-player {
 	position: absolute;
 	width: 13%;
 	aspect-ratio: 1;
 	transform: translate(-50%, -50%);
-}
-
-.demo-player {
 	top: 62.5%;
 	left: 25%;
 	z-index: 2;
@@ -264,28 +260,19 @@ a:focus-visible {
 	border-top: 2px dashed var(--gold);
 }
 
-.demo-box {
-	border: 1px solid rgb(255 246 226 / 35%);
-	border-radius: 18%;
-	background: var(--coral);
-	box-shadow:
-		0 0.3rem 0 var(--coral-dark),
-		0 0.8rem 1.3rem rgb(0 0 0 / 28%);
-}
-
 .demo-box-a {
-	top: 62.5%;
-	left: 62.5%;
+	top: 56.25%;
+	left: 56.25%;
 }
 
 .demo-box-b {
-	top: 37.5%;
-	left: 62.5%;
+	top: 31.25%;
+	left: 56.25%;
 }
 
 .demo-box-c {
-	top: 37.5%;
-	left: 87.5%;
+	top: 31.25%;
+	left: 81.25%;
 }
 
 .entry-controls {
