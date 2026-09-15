@@ -936,6 +936,54 @@ kbd {
 	background: var(--line);
 }
 
+.optimal-pulls {
+	--optimal-value-color: transparent;
+	--optimal-value-background: var(--muted);
+	--optimal-value-shadow: inset 0 0 0 1px rgb(238 234 224 / 18%);
+	display: inline-flex;
+	gap: 0.45rem;
+	align-items: center;
+	min-height: 2.75rem;
+	width: fit-content;
+	margin: 1rem 0 0;
+	padding: 0.3rem 0.45rem 0.3rem 0;
+	border: 0;
+	color: var(--muted);
+	background: transparent;
+	font:
+		500 0.58rem "DM Mono",
+		ui-monospace,
+		monospace;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.optimal-pulls strong {
+	display: inline-grid;
+	place-items: center;
+	min-width: 1.55rem;
+	min-height: 1.05rem;
+	padding: 0 0.25rem;
+	border-radius: 0.14rem;
+	color: var(--optimal-value-color);
+	background: var(--optimal-value-background);
+	font-size: 0.72rem;
+	letter-spacing: 0;
+	box-shadow: var(--optimal-value-shadow);
+}
+
+.optimal-pulls.is-revealed {
+	--optimal-value-color: var(--paper);
+	--optimal-value-background: rgb(238 234 224 / 8%);
+	--optimal-value-shadow: none;
+}
+
+.optimal-pulls:hover {
+	--optimal-value-background: var(--aqua);
+	color: var(--paper);
+}
+
 .game-layout {
 	display: grid;
 	grid-template-columns: minmax(15rem, 0.72fr) minmax(36rem, 1.6fr);
@@ -1172,7 +1220,21 @@ h1 {
 	position: relative;
 	width: 100%;
 	aspect-ratio: 1;
-	contain: size;
+	border-radius: clamp(0.8rem, 2vw, 1.35rem);
+	background:
+		linear-gradient(
+			90deg,
+			transparent calc(100% - 1px),
+			rgb(238 234 224 / 8%) 0
+		)
+		0 0 / 12.5% 100%,
+		linear-gradient(transparent calc(100% - 1px), rgb(238 234 224 / 8%) 0) 0 0 /
+		100% 12.5%,
+		#18282d;
+	box-shadow:
+		0 2.2rem 5rem rgb(1 7 9 / 35%),
+		inset 0 0 0 1px rgb(238 234 224 / 18%);
+	isolation: isolate;
 }
 
 .board {
@@ -1183,15 +1245,10 @@ h1 {
 	border-collapse: separate;
 	border-spacing: 0;
 	border: 0;
-	border-radius: clamp(0.8rem, 2vw, 1.35rem);
-	background: #18282d;
-	box-shadow:
-		0 2.2rem 5rem rgb(1 7 9 / 35%),
-		inset 0 0 0 1px rgb(238 234 224 / 18%);
-	isolation: isolate;
+	background: transparent;
 }
 
-.board::after {
+.board-surface::after {
 	position: absolute;
 	inset: clamp(0.42rem, 0.9vw, 0.7rem);
 	z-index: 0;
@@ -1216,20 +1273,10 @@ h1 {
 	min-width: 0;
 	padding: 0;
 	border: 0;
-	border-right: 1px solid rgb(238 234 224 / 8%);
-	border-bottom: 1px solid rgb(238 234 224 / 8%);
 	background: transparent;
 }
 
-.board-cell:last-child {
-	border-right: 0;
-}
-
-.board tbody tr:last-child .board-cell {
-	border-bottom: 0;
-}
-
-.board-cell.is-reachable::before {
+.board-cell-action::before {
 	position: absolute;
 	top: 50%;
 	left: 50%;
@@ -1266,16 +1313,12 @@ h1 {
 	}
 }
 
-.board-cell.is-reachable:hover::before,
-.board-cell:has(.board-cell-action:focus-visible)::before {
+.board-cell.is-reachable:hover .board-cell-action::before,
+.board-cell-action:focus-visible::before {
 	width: 16%;
 	height: 16%;
 	background: var(--aqua);
 	box-shadow: 0 0 1rem rgb(121 225 194 / 65%);
-}
-
-.board-cell.is-current::before {
-	display: none;
 }
 
 .board-cell-action {
@@ -1863,6 +1906,12 @@ h1 {
 	.game-copy .lede,
 	.instruction-list {
 		display: none;
+	}
+
+	.optimal-pulls {
+		grid-column: 2;
+		justify-self: start;
+		margin-top: 0;
 	}
 
 	.play-area {

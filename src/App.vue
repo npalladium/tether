@@ -65,6 +65,7 @@ const tutorialSelectedDirection = ref<Direction | null>(null);
 const selectedNormalLevelId = ref(defaultLevel.id);
 const isTutorial = ref(false);
 const inputMode = ref<InputMode>(detectInputMode());
+const revealedOptimalPulls = ref<Record<string, boolean>>({});
 const hasEntered = ref(false);
 const showGuide = ref(false);
 const assistance = ref<{
@@ -180,6 +181,9 @@ const selectionPreview = computed<LegalPull | undefined>(() => {
 });
 const isPullAnimating = computed(() => engagedPull.value !== null);
 const hasHistory = computed(() => session.value.history.length > 0);
+const isOptimalPullsRevealed = computed(
+	() => revealedOptimalPulls.value[session.value.level.id] === true,
+);
 const modalIsOpen = computed(
 	() => showGuide.value || assistance.value !== null,
 );
@@ -280,6 +284,13 @@ const statusDetail = computed(() => {
 			return announcement.value;
 	}
 });
+function toggleOptimalPulls(): void {
+	if (isTutorial.value || session.value.level.par === undefined) return;
+	revealedOptimalPulls.value = {
+		...revealedOptimalPulls.value,
+		[session.value.level.id]: !isOptimalPullsRevealed.value,
+	};
+}
 
 function bestStorageKey(levelId: string): string {
 	return `tether:${levelId}:best-pulls`;
@@ -826,6 +837,22 @@ onBeforeUnmount(() => {
 					{{ isTutorial ? "Guided practice · One pull" : `Room ${normalLevelNumber} · Shape study` }}
 				</p>
 				<h1 id="level-title"><em class="game-title-emphasis">{{ session.level.title }}</em></h1>
+				<button
+					v-if="!isTutorial && session.level.par !== undefined"
+					type="button"
+					class="optimal-pulls"
+					:class="{ 'is-revealed': isOptimalPullsRevealed }"
+					:aria-label="
+						isOptimalPullsRevealed
+							? `Hide optimal pull count for ${session.level.title ?? 'this room'}`
+							: `Reveal optimal pull count for ${session.level.title ?? 'this room'}`
+					"
+					:aria-pressed="isOptimalPullsRevealed"
+					@click="toggleOptimalPulls"
+				>
+					<span>Optimal pulls</span>
+					<strong aria-hidden="true">{{ isOptimalPullsRevealed ? session.level.par : "?" }}</strong>
+				</button>
 				<p class="lede">
 					{{
 						isTutorial

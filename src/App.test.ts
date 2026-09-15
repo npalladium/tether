@@ -299,6 +299,31 @@ describe("Tether application", () => {
 		);
 	});
 
+	it("reveals optimal pulls only for rooms the player chooses", async () => {
+		const wrapper = mountApp();
+		await enterGame(wrapper);
+		const disclosure = wrapper.get(".optimal-pulls");
+
+		expect(disclosure.attributes("aria-pressed")).toBe("false");
+		expect(disclosure.get("strong").text()).toBe("?");
+		await disclosure.trigger("click");
+		expect(disclosure.attributes("aria-pressed")).toBe("true");
+		expect(disclosure.get("strong").text()).toBe("1");
+
+		await wrapper.get(".level-select select").setValue("screening-line-v1");
+		const nextDisclosure = wrapper.get(".optimal-pulls");
+		expect(nextDisclosure.attributes("aria-pressed")).toBe("false");
+		expect(nextDisclosure.get("strong").text()).toBe("?");
+		await nextDisclosure.trigger("click");
+		expect(nextDisclosure.get("strong").text()).toBe("4");
+
+		await wrapper.get(".level-select select").setValue("first-connection-v1");
+		expect(wrapper.get(".optimal-pulls").attributes("aria-pressed")).toBe(
+			"true",
+		);
+		expect(wrapper.get(".optimal-pulls strong").text()).toBe("1");
+	});
+
 	it("preserves room state across tutorials and level changes", async () => {
 		const wrapper = mountApp();
 		await enterGame(wrapper);
