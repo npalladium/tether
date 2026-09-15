@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { queryRef } from "vue-qs";
 import type { AssistanceMode } from "./assistance/types";
 import AssistanceDialog from "./components/AssistanceDialog.vue";
 import GameBoard from "./components/GameBoard.vue";
@@ -62,7 +63,14 @@ const tutorialAnnouncement = ref(
 	"Walk to the glowing firing tile to line up your first tether.",
 );
 const tutorialSelectedDirection = ref<Direction | null>(null);
-const selectedNormalLevelId = ref(defaultLevel.id);
+const selectedNormalLevelId = queryRef("room", {
+	defaultValue: defaultLevel.id,
+	parse: (roomId) =>
+		roomId !== null && normalSessions.value[roomId] !== undefined
+			? roomId
+			: defaultLevel.id,
+	historyStrategy: "push",
+});
 const isTutorial = ref(false);
 const inputMode = ref<InputMode>(detectInputMode());
 const revealedOptimalPulls = ref<Record<string, boolean>>({});
@@ -687,7 +695,10 @@ onBeforeUnmount(() => {
 				<span class="wordmark-mark" aria-hidden="true"></span>
 				<span>Tether</span>
 			</div>
-			<span class="entry-edition">A quiet spatial puzzle</span>
+			<div class="entry-meta">
+				<span class="entry-edition">A quiet spatial puzzle</span>
+				<a class="entry-design-link" href="./design">Design notes</a>
+			</div>
 		</header>
 
 		<div class="entry-layout">

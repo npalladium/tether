@@ -72,6 +72,7 @@ async function selectAndPull(
 describe("Tether application", () => {
 	beforeEach(() => {
 		window.localStorage.clear();
+		window.history.replaceState({}, "", "/");
 		mockMedia(true);
 	});
 
@@ -297,6 +298,20 @@ describe("Tether application", () => {
 		expect(wrapper.get(".tutorial-guide").text()).toContain(
 			"Any rotation of the L counts",
 		);
+	});
+
+	it("opens linked rooms and keeps room selection in the URL", async () => {
+		window.history.replaceState({}, "", "/?room=screening-line-v1");
+		const wrapper = mountApp();
+
+		await enterGame(wrapper);
+		expect(wrapper.get("#level-title").text()).toContain("Screening line");
+
+		await wrapper.get(".level-select select").setValue("turning-room-v1");
+		expect(window.location.search).toBe("?room=turning-room-v1");
+
+		await wrapper.get(".level-select select").setValue("first-connection-v1");
+		expect(window.location.search).toBe("");
 	});
 
 	it("reveals optimal pulls only for rooms the player chooses", async () => {

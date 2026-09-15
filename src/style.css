@@ -86,6 +86,20 @@ a:focus-visible {
 	min-height: 6.5rem;
 	border-bottom: 1px solid var(--line);
 }
+.entry-meta {
+	display: flex;
+	gap: 1.5rem;
+	align-items: center;
+}
+
+.entry-design-link {
+	color: var(--aqua);
+	font-family: "DM Mono", ui-monospace, monospace;
+	font-size: 0.62rem;
+	letter-spacing: 0.11em;
+	text-underline-offset: 0.3em;
+	text-transform: uppercase;
+}
 
 .entry-edition,
 .entry-note {
