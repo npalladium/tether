@@ -132,8 +132,7 @@
 				background: var(--gold);
 			}
 
-			.play-link,
-			.source-link {
+			.play-link {
 				color: var(--aqua);
 				font-family: "DM Mono", ui-monospace, monospace;
 				font-size: 0.72rem;
@@ -228,11 +227,11 @@
 			}
 
 			.box-a {
-				grid-area: 1 / 4;
+				grid-area: 2 / 3;
 			}
 
 			.box-b {
-				grid-area: 2 / 4;
+				grid-area: 3 / 3;
 			}
 
 			.box-c {
@@ -361,10 +360,6 @@
 			}
 
 			.site-footer {
-				display: flex;
-				gap: 1.5rem;
-				align-items: center;
-				justify-content: space-between;
 				padding: 2.5rem 0 4rem;
 				color: var(--muted);
 				font-size: 0.78rem;
@@ -425,10 +420,6 @@
 				}
 
 
-				.site-footer {
-					align-items: flex-start;
-					flex-direction: column;
-				}
 			}
 
 			@media (prefers-reduced-motion: reduce) {
@@ -461,7 +452,7 @@
 				<div
 					class="rule-diagram"
 					role="img"
-					aria-label="A box aligned above the player is pulled toward the player"
+					aria-label="A final pull will move the upper box into the previewed tile and complete an L"
 				>
 					<span class="tether" aria-hidden="true"></span>
 					<span class="piece box box-a" aria-hidden="true"></span>
@@ -469,7 +460,7 @@
 					<span class="piece box box-c" aria-hidden="true"></span>
 					<span class="piece ghost" aria-hidden="true"></span>
 					<span class="piece player" aria-hidden="true"></span>
-					<span class="diagram-label" aria-hidden="true">Stand · sight · pull</span>
+					<span class="diagram-label" aria-hidden="true">Preview · pull · complete</span>
 				</div>
 			</section>
 
@@ -574,11 +565,6 @@
 
 		<footer class="site-footer">
 			<p>A concise public companion to Tether's working design documents.</p>
-			<p>
-				<a class="source-link" href="https://github.com/npalladium/tether/blob/main/design-draft.md">Full design draft</a>
-				·
-				<a class="source-link" href="https://github.com/npalladium/tether/blob/main/docs/tether-gameplay-best-practices.md">Gameplay notes</a>
-			</p>
 		</footer>
 	</body>
 </html>
