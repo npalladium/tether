@@ -148,6 +148,198 @@ const devilsElbow: Level = parseLevel({
 	par: 6,
 });
 
+const falseStart: Level = parseLevel({
+	id: "false-start-v1",
+	title: "False Start",
+	startPlayer: { x: 5, y: 7 },
+	startBoxes: [
+		{ x: 4, y: 0 },
+		{ x: 4, y: 3 },
+		{ x: 6, y: 5 },
+	],
+	pillars: [
+		{ x: 6, y: 0 },
+		{ x: 5, y: 1 },
+		{ x: 2, y: 2 },
+		{ x: 5, y: 2 },
+		{ x: 6, y: 2 },
+		{ x: 6, y: 3 },
+		{ x: 4, y: 5 },
+		{ x: 4, y: 6 },
+		{ x: 7, y: 6 },
+	],
+	par: 9,
+});
+
+const outOfLine: Level = parseLevel({
+	id: "out-of-line-v1",
+	title: "Out of Line",
+	startPlayer: { x: 0, y: 5 },
+	startBoxes: [
+		{ x: 1, y: 4 },
+		{ x: 4, y: 4 },
+		{ x: 1, y: 1 },
+	],
+	pillars: [
+		{ x: 0, y: 0 },
+		{ x: 6, y: 0 },
+		{ x: 7, y: 0 },
+		{ x: 0, y: 1 },
+		{ x: 7, y: 2 },
+		{ x: 0, y: 3 },
+		{ x: 3, y: 3 },
+		{ x: 6, y: 3 },
+		{ x: 0, y: 4 },
+		{ x: 2, y: 4 },
+		{ x: 5, y: 4 },
+		{ x: 4, y: 5 },
+		{ x: 0, y: 7 },
+		{ x: 2, y: 7 },
+	],
+	par: 7,
+});
+
+const borrowedSpace: Level = parseLevel({
+	id: "borrowed-space-v1",
+	title: "Borrowed Space",
+	startPlayer: { x: 3, y: 4 },
+	startBoxes: [
+		{ x: 4, y: 1 },
+		{ x: 0, y: 3 },
+		{ x: 5, y: 4 },
+	],
+	pillars: [
+		{ x: 6, y: 0 },
+		{ x: 0, y: 6 },
+		{ x: 6, y: 1 },
+		{ x: 1, y: 6 },
+		{ x: 6, y: 2 },
+		{ x: 2, y: 6 },
+		{ x: 6, y: 3 },
+		{ x: 3, y: 6 },
+		{ x: 6, y: 4 },
+		{ x: 4, y: 6 },
+		{ x: 6, y: 5 },
+		{ x: 5, y: 6 },
+		{ x: 6, y: 6 },
+		{ x: 6, y: 7 },
+		{ x: 7, y: 6 },
+		{ x: 0, y: 1 },
+		{ x: 2, y: 3 },
+		{ x: 2, y: 4 },
+		{ x: 3, y: 1 },
+	],
+	par: 7,
+});
+
+const spaceReserved: Level = parseLevel({
+	id: "space-reserved-v1",
+	title: "Space Reserved",
+	startPlayer: { x: 3, y: 4 },
+	startBoxes: [
+		{ x: 4, y: 1 },
+		{ x: 0, y: 3 },
+		{ x: 5, y: 4 },
+	],
+	pillars: [
+		{ x: 6, y: 0 },
+		{ x: 0, y: 6 },
+		{ x: 6, y: 1 },
+		{ x: 1, y: 6 },
+		{ x: 6, y: 2 },
+		{ x: 2, y: 6 },
+		{ x: 6, y: 3 },
+		{ x: 3, y: 6 },
+		{ x: 6, y: 4 },
+		{ x: 4, y: 6 },
+		{ x: 6, y: 5 },
+		{ x: 5, y: 6 },
+		{ x: 6, y: 6 },
+		{ x: 6, y: 7 },
+		{ x: 7, y: 6 },
+		{ x: 0, y: 1 },
+		{ x: 2, y: 3 },
+		{ x: 2, y: 4 },
+		{ x: 5, y: 3 },
+	],
+	par: 8,
+});
+
+const lastExit: Level = parseLevel({
+	id: "last-exit-v1",
+	title: "Last Exit",
+	startPlayer: { x: 0, y: 0 },
+	startBoxes: [
+		{ x: 2, y: 3 },
+		{ x: 4, y: 6 },
+		{ x: 4, y: 0 },
+	],
+	pillars: [
+		{ x: 3, y: 0 },
+		{ x: 3, y: 1 },
+		{ x: 0, y: 2 },
+		{ x: 0, y: 3 },
+		{ x: 1, y: 3 },
+		{ x: 3, y: 3 },
+		{ x: 3, y: 4 },
+		{ x: 3, y: 5 },
+		{ x: 3, y: 6 },
+		{ x: 3, y: 7 },
+	],
+	par: 14,
+});
+
+const wrongCorner: Level = parseLevel({
+	id: "wrong-corner-v1",
+	title: "Wrong Corner",
+	startPlayer: { x: 7, y: 2 },
+	startBoxes: [
+		{ x: 1, y: 0 },
+		{ x: 1, y: 1 },
+		{ x: 7, y: 6 },
+	],
+	pillars: [
+		{ x: 5, y: 0 },
+		{ x: 2, y: 1 },
+		{ x: 3, y: 1 },
+		{ x: 4, y: 3 },
+		{ x: 7, y: 3 },
+		{ x: 0, y: 4 },
+		{ x: 6, y: 4 },
+		{ x: 7, y: 4 },
+		{ x: 4, y: 5 },
+		{ x: 4, y: 6 },
+		{ x: 0, y: 7 },
+		{ x: 1, y: 7 },
+	],
+	par: 8,
+});
+
+const devilsDue: Level = parseLevel({
+	id: "devils-due-v1",
+	title: "Devil's Due",
+	startPlayer: { x: 1, y: 2 },
+	startBoxes: [
+		{ x: 1, y: 6 },
+		{ x: 7, y: 6 },
+		{ x: 5, y: 4 },
+	],
+	pillars: [
+		{ x: 5, y: 0 },
+		{ x: 0, y: 1 },
+		{ x: 1, y: 1 },
+		{ x: 5, y: 1 },
+		{ x: 2, y: 3 },
+		{ x: 6, y: 3 },
+		{ x: 2, y: 4 },
+		{ x: 4, y: 5 },
+		{ x: 3, y: 6 },
+		{ x: 3, y: 7 },
+		{ x: 6, y: 7 },
+	],
+	par: 11,
+});
+
 export const levels: readonly Level[] = [
 	defaultLevel,
 	chooseTheStop,
@@ -159,6 +351,13 @@ export const levels: readonly Level[] = [
 	splitCrossing,
 	needlesEye,
 	devilsElbow,
+	falseStart,
+	outOfLine,
+	borrowedSpace,
+	spaceReserved,
+	lastExit,
+	wrongCorner,
+	devilsDue,
 ];
 
 export const levelGroups: readonly {
@@ -178,6 +377,18 @@ export const levelGroups: readonly {
 			splitCrossing,
 			needlesEye,
 			devilsElbow,
+		],
+	},
+	{
+		title: "Expert",
+		levels: [
+			falseStart,
+			outOfLine,
+			borrowedSpace,
+			spaceReserved,
+			lastExit,
+			wrongCorner,
+			devilsDue,
 		],
 	},
 ];

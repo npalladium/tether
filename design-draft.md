@@ -226,11 +226,12 @@ Keep an explicit inventory of every authored layout separate from examples and
 proposals:
 
 ### Authored source inventory
-`src/level.ts` exports ten selectable rooms. Its **Learn the pull** group is a
-four-room teaching sequence; its **Puzzles** group contains six normal,
-non-teaching application rooms. The table records an independent exhaustive
-canonical-state audit of the current opaque-pillar resolver. “Routes” counts
-shortest canonical state paths, not walking routes or labelled-box permutations.
+`src/level.ts` exports seventeen selectable rooms. Its **Learn the pull** group
+is a four-room teaching sequence; its **Puzzles** group contains six normal
+application rooms; **Expert** contains seven dependency-focused rooms. The
+table records an independent exhaustive canonical-state audit of the current
+opaque-pillar resolver. “Routes” counts shortest canonical state paths, not
+walking routes or labelled-box permutations.
 
 | Group and revision | Layout and intended role | Engine evidence |
 |---|---|---|
@@ -244,6 +245,13 @@ shortest canonical state paths, not walking routes or labelled-box permutations.
 | Puzzles — `split-crossing-v1`, **Split crossing** | Player `(2,5)`; boxes `(6,7)`, `(2,0)`, `(0,0)`; opaque pillars `(1,7)`, `(4,0)`, `(2,1)`. A split-board application requiring approach from both edges. | Par 5; 15,357 states; 40 shortest routes; 1,021 no-win states. Witness: `(6,1)` S, `(0,4)` N, `(0,0)` E, `(1,4)` N, `(0,2)` E. |
 | Puzzles — `needles-eye-v1`, **Needle's eye** | Player `(3,7)`; boxes `(4,6)`, `(1,0)`, `(2,6)`; opaque pillars `(3,6)`, `(2,5)`. A compact lower-board obstruction forces the boxes through separate approach lines. | Par 5; 8,659 states; 16 shortest routes; 37 no-win states. Witness: `(3,0)` W, `(4,0)` S, `(1,1)` E, `(0,6)` E, `(1,0)` S. |
 | Puzzles — `devils-elbow-v1`, **Devil's elbow** | Player `(3,5)`; boxes `(4,1)`, `(3,0)`, `(6,5)`; opaque pillars `(3,1)`, `(5,1)`, `(5,5)`. The final room combines occluded rays with repeated changes of approach. | Par 6; 8,651 states; 5,146 shortest routes; 35 no-win states. Witness: `(0,0)` E, `(6,1)` S, `(1,2)` E, `(1,3)` N, `(4,4)` N, `(0,3)` E. |
+| Expert — `false-start-v1`, **False Start** | Player `(5,7)`; boxes `(4,0)`, `(4,3)`, `(6,5)`; nine pillars create competing first pulls. Every shortest opening moves a box away, while the sole distance-reducing opening costs an extra pull. | Par 9; 898 states; 1,924 shortest routes; 134 no-win states. Pairwise box-Manhattan distance starts at 14; all six optimal first results increase it, while the only reducing result reaches 12 but needs 10 pulls. |
+| Expert — `out-of-line-v1`, **Out of Line** | Player `(0,5)`; boxes `(1,4)`, `(4,4)`, `(1,1)`; fourteen pillars make the nearer horizontal box screen the farther one. It must move sideways, then move again after the far box is accessible. | Par 7; 714 states; 24 shortest routes; 304 no-win states. The far box has no legal first pull; every shortest route stages the screen first and later reincorporates it. |
+| Expert — `borrowed-space-v1`, **Borrowed Space** | Player `(3,4)`; boxes `(4,1)`, `(0,3)`, `(5,4)`; nineteen pillars bound an eastern staging lane. Park the eastern box, rethread both other boxes, then pull the parked box again into the L. | Par 7; 268 states; 80 shortest routes; 267 no-win states. Every shortest route contains a temporally separated repeated box move; the replayed witness moves the eastern box on pulls 1 and 6. |
+| Expert — `space-reserved-v1`, **Space Reserved** | Same player and boxes as **Borrowed Space**; relocating one pillar from `(3,1)` to `(5,3)` blocks that room’s initial staging pull and changes the optimal ordering. | Par 8; 218 states; 95 shortest routes; 217 no-win states. Every shortest route uses temporary parking; the replayed witness returns to its initially moved box on pull 4. |
+| Expert — `last-exit-v1`, **Last Exit** | Player `(0,0)`; boxes `(2,3)`, `(4,6)`, `(4,0)`; a pillar wall at `x=3` leaves only the `(3,2)` crossing. Prepare the left side before drawing a box through the crossing and closing its approach. | Par 14; 4,387 states; 7 shortest routes; 694 no-win states. After witness pull 4, an immediate crossing pull has no winning continuation; after two preparation pulls, the same crossing is on the shortest winning route. |
+| Expert — `wrong-corner-v1`, **Wrong Corner** | Player `(7,2)`; boxes `(1,0)`, `(1,1)`, `(7,6)`; the top-left square visually starts with two L corners, but the intended L is distant. | Par 8; 917 states; 52 shortest routes; 43 no-win states. No reachable winning state occupies the tempting top-left 2×2; the replayed witness wins in the 2×2 at `(5,5)`. |
+| Expert — `devils-due-v1`, **Devil’s Due** | Player `(1,2)`; boxes `(1,6)`, `(7,6)`, `(5,4)`; eleven pillars turn the lower-left lanes into a repeated parking-and-access dependency. | Par 11; 2,608 states; 3 shortest routes; 792 no-win states. The witness has eight repeated box moves; one wrong branch is terminal and another costs at least two extra pulls. |
 
 The shipped teaching group establishes endpoint choice, first-visible targeting,
 and opaque-pillar blocking. It does **not** by itself establish a full teaching
@@ -264,12 +272,11 @@ the default, alter its score, or count as progression.
 ### Historical example and proposed roles
 
 §1.8's verified enclosure is retained for its replayable win/loss evidence, but
-is not shipped or evidence of a current sequencing lesson. The unrepresented
-teaching-arc roles remain future authoring work. The current normal group
-contains six graph-verified application rooms. New rooms require coordinates,
-a revision id, full-graph evidence, and a replayed witness.
-
-Hand-author any remaining teaching rooms before investing in mining.
+is not shipped or evidence of a current sequencing lesson. The six **Puzzles**
+rooms remain normal applications; the seven **Expert** rooms deliberately cover
+false progress, screening order, temporary parking, paired perturbation,
+passage commitment, and misleading goal placement. Every shipped room has
+coordinates, a revision id, full-graph evidence, and a replayed witness.
 
 **[OPEN] Level sourcing after the authored set:**
 
@@ -280,11 +287,12 @@ Hand-author any remaining teaching rooms before investing in mining.
 | Random layout + exhaustive analysis | Produces candidates under the chosen sampling distribution, not an unbiased measure of puzzle quality. |
 | Generate-and-mine | Analyse candidates, then hand-pick and polish. Useful only once there are criteria worth mining for. |
 
-For non-tutorial candidates, par 3–6 and at most three optimal solutions are
-initial search parameters, not established quality thresholds. An intentional
-one-pull introduction is an explicit exception. Reject invalid layouts and
-D4-symmetry duplicates before expensive analysis. Equivalence uses both box
-positions and the player's reachable region, not the exact walking tile.
+The former par 3–6 and at-most-three-route search parameters were exploratory
+filters, not quality thresholds. The Expert rooms deliberately exceed both where
+the measured dependency is stronger than a shorter artificial target. Reject
+invalid layouts and D4-symmetry duplicates before expensive analysis.
+Equivalence uses both box positions and the player's reachable region, not the
+exact walking tile.
 
 Pillar removal is a proposal for review, not an automatic simplification. An
 unchanged par and optimal count can coexist with a different dead-state fraction
@@ -561,10 +569,10 @@ or reachability constraints and be checked against solutions and playtests.
    are readable before adding content tooling.
 3. L detection, unlimited undo, reset, per-session best-score update, and
    no-pulls feedback. Keep legal-move teaching effects separate from rejected shots.
-4. The current authored source set: four Learn rooms, six normal Puzzles
-   rooms, and separate guided practice. Keep their exact layouts and graph
-   evidence in §1.10; do not substitute the historical enclosure example for a
-   shipped room.
+4. The current authored source set: four Learn rooms, six normal Puzzles rooms,
+   seven dependency-focused Expert rooms, and separate guided practice. Keep
+   their exact layouts and graph evidence in §1.10; do not substitute the
+   historical enclosure example for a shipped room.
 5. Offline solver for par and full-graph analysis for every authored room, not
    only candidates whose metrics happen to be needed.
 6. Iterate on level and tutorial emphasis from replay and play evidence. Decide
