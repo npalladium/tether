@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta
+			name="description"
+			content="Design notes for Tether, a spatial puzzle about pulling three boxes into an L."
+		/>
+		<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600&display=swap"
+			rel="stylesheet"
+		/>
+		<title>Design notes · Tether</title>
+		<style>
+			:root {
+				color: #eeeae0;
+				background: #101c20;
+				font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+				font-synthesis: none;
+				text-rendering: optimizeLegibility;
+				--ink: #101c20;
+				--paper: #eeeae0;
+				--muted: #93a29f;
+				--aqua: #79e1c2;
+				--coral: #e26951;
+				--gold: #edc76b;
+				--line: rgb(238 234 224 / 14%);
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			html {
+				scroll-behavior: smooth;
+			}
+
+			body {
+				min-width: 320px;
+				margin: 0;
+				background:
+					radial-gradient(circle at 78% 8%, rgb(121 225 194 / 9%), transparent 28rem),
+					linear-gradient(90deg, transparent calc(100% - 1px), rgb(238 234 224 / 2%) 1px),
+					linear-gradient(transparent calc(100% - 1px), rgb(238 234 224 / 2%) 1px),
+					var(--ink);
+				background-size: auto, 48px 48px, 48px 48px, auto;
+			}
+
+			a {
+				color: inherit;
+			}
+
+			a:focus-visible {
+				outline: 2px solid var(--gold);
+				outline-offset: 4px;
+			}
+
+			.skip-link {
+				position: fixed;
+				top: 0.75rem;
+				left: 0.75rem;
+				z-index: 2;
+				padding: 0.65rem 0.85rem;
+				color: var(--ink);
+				background: var(--gold);
+				transform: translateY(-200%);
+			}
+
+			.skip-link:focus {
+				transform: translateY(0);
+			}
+
+			.site-header,
+			main,
+			.site-footer {
+				width: min(100% - 2rem, 72rem);
+				margin-inline: auto;
+			}
+
+			.site-header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				min-height: 6.5rem;
+				border-bottom: 1px solid var(--line);
+			}
+
+			.wordmark {
+				display: inline-flex;
+				gap: 0.8rem;
+				align-items: center;
+				font-family: "DM Mono", ui-monospace, monospace;
+				font-size: 0.8rem;
+				font-weight: 500;
+				letter-spacing: 0.18em;
+				text-decoration: none;
+				text-transform: uppercase;
+			}
+
+			.mark {
+				position: relative;
+				width: 1.75rem;
+				height: 1.75rem;
+				border: 2px solid var(--aqua);
+			}
+
+			.mark::before,
+			.mark::after {
+				position: absolute;
+				content: "";
+			}
+
+			.mark::before {
+				top: 50%;
+				left: 50%;
+				width: 1.05rem;
+				height: 2px;
+				background: var(--aqua);
+				transform: translate(-50%, -50%) rotate(-45deg);
+			}
+
+			.mark::after {
+				right: 0.19rem;
+				bottom: 0.19rem;
+				width: 0.35rem;
+				height: 0.35rem;
+				border-radius: 50%;
+				background: var(--gold);
+			}
+
+			.play-link,
+			.source-link {
+				color: var(--aqua);
+				font-family: "DM Mono", ui-monospace, monospace;
+				font-size: 0.72rem;
+				letter-spacing: 0.09em;
+				text-underline-offset: 0.3em;
+				text-transform: uppercase;
+			}
+
+			.hero {
+				display: grid;
+				grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+				gap: clamp(2.5rem, 8vw, 7rem);
+				align-items: center;
+				min-height: 39rem;
+				padding: 6rem 0;
+				border-bottom: 1px solid var(--line);
+			}
+
+			.eyebrow,
+			.section-number,
+			.decision-label,
+			.diagram-label {
+				color: var(--aqua);
+				font-family: "DM Mono", ui-monospace, monospace;
+				font-size: 0.68rem;
+				font-weight: 500;
+				letter-spacing: 0.14em;
+				text-transform: uppercase;
+			}
+
+			h1,
+			h2,
+			h3,
+			p {
+				margin-top: 0;
+			}
+
+			h1 {
+				max-width: 48rem;
+				margin-bottom: 1.75rem;
+				font-size: clamp(3rem, 7vw, 6.6rem);
+				font-weight: 500;
+				letter-spacing: -0.055em;
+				line-height: 0.94;
+			}
+
+			h1 em {
+				display: block;
+				margin-top: 0.12em;
+				color: var(--gold);
+				font-family: "Playfair Display", Georgia, serif;
+				font-weight: 600;
+			}
+
+			.hero-copy > p:last-child {
+				max-width: 38rem;
+				margin-bottom: 0;
+				color: #bcc7c4;
+				font-size: 1.05rem;
+				line-height: 1.8;
+			}
+
+			.rule-diagram {
+				position: relative;
+				display: grid;
+				grid-template-columns: repeat(4, 1fr);
+				aspect-ratio: 1;
+				padding: 12%;
+				border: 1px solid rgb(121 225 194 / 28%);
+				border-radius: 1.25rem;
+				background:
+					linear-gradient(90deg, var(--line) 1px, transparent 1px),
+					linear-gradient(var(--line) 1px, transparent 1px),
+					rgb(8 20 23 / 70%);
+				background-size: 25% 25%;
+				box-shadow: 0 1.8rem 5rem rgb(0 0 0 / 24%);
+			}
+
+			.piece {
+				position: relative;
+				align-self: center;
+				justify-self: center;
+				width: 56%;
+				aspect-ratio: 1;
+			}
+
+			.box {
+				border: 1px solid #ff9a83;
+				border-radius: 18%;
+				background: var(--coral);
+				box-shadow: 0 0.4rem 0 #873a2d;
+			}
+
+			.box-a {
+				grid-area: 1 / 4;
+			}
+
+			.box-b {
+				grid-area: 2 / 4;
+			}
+
+			.box-c {
+				grid-area: 1 / 2;
+			}
+
+			.ghost {
+				grid-area: 3 / 2;
+				border: 2px dashed var(--aqua);
+				border-radius: 18%;
+				background: rgb(226 105 81 / 18%);
+			}
+
+			.player {
+				grid-area: 4 / 2;
+				border: 0.28rem solid var(--aqua);
+				border-radius: 50%;
+				box-shadow: 0 0 1.2rem rgb(121 225 194 / 35%);
+			}
+
+			.player::after {
+				position: absolute;
+				inset: 29%;
+				border-radius: 50%;
+				background: var(--paper);
+				content: "";
+			}
+
+			.tether {
+				position: absolute;
+				bottom: 23%;
+				left: 37%;
+				width: 2px;
+				height: 58%;
+				background: repeating-linear-gradient(
+					to bottom,
+					var(--aqua) 0 0.35rem,
+					transparent 0.35rem 0.7rem
+				);
+			}
+
+			.diagram-label {
+				position: absolute;
+				right: 1rem;
+				bottom: 1rem;
+				color: var(--muted);
+			}
+
+
+			.design-section {
+				display: grid;
+				grid-template-columns: minmax(11rem, 0.32fr) minmax(0, 1fr);
+				gap: clamp(2rem, 7vw, 7rem);
+				padding: clamp(4.5rem, 8vw, 7rem) 0;
+				border-bottom: 1px solid var(--line);
+			}
+
+			.section-heading h2 {
+				margin-bottom: 0;
+				font-size: clamp(1.8rem, 4vw, 3.2rem);
+				font-weight: 500;
+				letter-spacing: -0.035em;
+				line-height: 1.08;
+			}
+
+			.section-body > p {
+				max-width: 46rem;
+				color: #bdc7c5;
+				font-size: 1rem;
+				line-height: 1.8;
+			}
+
+			.inspirations {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				gap: 1px;
+				margin-top: 2rem;
+				background: var(--line);
+				border: 1px solid var(--line);
+			}
+
+			.inspiration {
+				padding: 1.5rem;
+				background: rgb(16 28 32 / 96%);
+			}
+
+			.inspiration h3 {
+				display: block;
+				margin: 0.35rem 0 0.6rem;
+				color: var(--paper);
+				font-size: 0.95rem;
+				font-weight: 600;
+			}
+
+			.inspiration p {
+				margin-bottom: 0;
+				color: var(--muted);
+				font-size: 0.85rem;
+				line-height: 1.65;
+			}
+
+			.compact-list {
+				padding: 0;
+				margin: 1.5rem 0 0;
+				border-top: 1px solid var(--line);
+				list-style: none;
+			}
+
+			.compact-list li {
+				display: grid;
+				grid-template-columns: minmax(10rem, 0.32fr) minmax(0, 1fr);
+				gap: 1.5rem;
+				padding: 1.15rem 0;
+				border-bottom: 1px solid var(--line);
+			}
+
+			.compact-list strong {
+				color: var(--paper);
+				font-size: 0.9rem;
+			}
+
+			.compact-list span {
+				color: var(--muted);
+				font-size: 0.85rem;
+				line-height: 1.6;
+			}
+
+			.site-footer {
+				display: flex;
+				gap: 1.5rem;
+				align-items: center;
+				justify-content: space-between;
+				padding: 2.5rem 0 4rem;
+				color: var(--muted);
+				font-size: 0.78rem;
+			}
+
+			.site-footer p {
+				margin: 0;
+			}
+
+			@media (max-width: 760px) {
+				.site-header {
+					min-height: 4.75rem;
+				}
+
+				.hero {
+					grid-template-columns: 1fr;
+					min-height: 0;
+					padding: 4rem 0;
+				}
+
+				.rule-diagram {
+					width: min(100%, 25rem);
+					margin-inline: auto;
+				}
+
+				.design-section {
+					grid-template-columns: 1fr;
+					gap: 1.8rem;
+				}
+
+				.inspirations {
+					grid-template-columns: 1fr;
+				}
+
+				.compact-list li {
+					grid-template-columns: 1fr;
+					gap: 0.35rem;
+				}
+			}
+
+			@media (max-width: 480px) {
+				.site-header,
+				main,
+				.site-footer {
+					width: min(100% - 1.25rem, 72rem);
+				}
+
+				.wordmark > span:last-child {
+					display: none;
+				}
+
+				h1 {
+					font-size: clamp(2.8rem, 15vw, 4rem);
+				}
+
+				.hero {
+					padding: 3rem 0;
+				}
+
+
+				.site-footer {
+					align-items: flex-start;
+					flex-direction: column;
+				}
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				html {
+					scroll-behavior: auto;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<a class="skip-link" href="#content">Skip to content</a>
+		<header class="site-header">
+			<a class="wordmark" href="./" aria-label="Play Tether">
+				<span class="mark" aria-hidden="true"></span>
+				<span>Tether</span>
+			</a>
+			<a class="play-link" href="./">Play the game →</a>
+		</header>
+
+		<main id="content">
+			<section class="hero" aria-labelledby="page-title">
+				<div class="hero-copy">
+					<p class="eyebrow">Design notes · A living prototype</p>
+					<h1 id="page-title">The player is <em>the stopping point.</em></h1>
+					<p>
+						Tether is an 8×8 puzzle about pulling three boxes into an L. Stand where a
+						box should stop, then preserve access to the next useful position.
+					</p>
+				</div>
+				<div
+					class="rule-diagram"
+					role="img"
+					aria-label="A box aligned above the player is pulled toward the player"
+				>
+					<span class="tether" aria-hidden="true"></span>
+					<span class="piece box box-a" aria-hidden="true"></span>
+					<span class="piece box box-b" aria-hidden="true"></span>
+					<span class="piece box box-c" aria-hidden="true"></span>
+					<span class="piece ghost" aria-hidden="true"></span>
+					<span class="piece player" aria-hidden="true"></span>
+					<span class="diagram-label" aria-hidden="true">Stand · sight · pull</span>
+				</div>
+			</section>
+
+			<section id="idea" class="design-section" aria-labelledby="idea-title">
+				<div class="section-heading">
+					<p class="section-number">01 · Core idea</p>
+					<h2 id="idea-title">Access is the puzzle.</h2>
+				</div>
+				<div class="section-body">
+					<p>
+						Walking is free. A pull brings the first visible box to the tile beside the
+						player. Every destination therefore depends on where the player can stand now—and
+						where they can still stand next.
+					</p>
+				</div>
+			</section>
+
+			<section id="inspiration" class="design-section" aria-labelledby="inspiration-title">
+				<div class="section-heading">
+					<p class="section-number">02 · Inspiration</p>
+					<h2 id="inspiration-title">Familiar pieces, a different question.</h2>
+				</div>
+				<div class="section-body">
+					<p>
+						Tether belongs to a clear lineage of compact spatial puzzles. The references
+						below are comparisons, not novelty claims: each illuminates one part of the
+						design while making the difference easier to name.
+					</p>
+					<div class="inspirations">
+						<article class="inspiration">
+							<p class="decision-label">Sokoban · Pukoban</p>
+							<h3>Avatar and boxes</h3>
+							<p>Tether keeps navigation around boxes, but replaces marked destinations and one-cell pushes or pulls with long pulls to the player's position.</p>
+						</article>
+						<article class="inspiration">
+							<p class="decision-label">Ricochet Robots</p>
+							<h3>Long orthogonal lines</h3>
+							<p>Both reward scanning ranks and files. Here, the endpoint comes from where the player stands rather than where the environment stops a moving piece.</p>
+						</article>
+						<article class="inspiration">
+							<p class="decision-label">A Good Snowman</p>
+							<h3>Construction as the goal</h3>
+							<p>The objective is a recognisable arrangement, not delivery to highlighted target cells. Any L location and any rotation can win.</p>
+						</article>
+						<article class="inspiration">
+							<p class="decision-label">Rush Hour · Klotski</p>
+							<h3>Access and order</h3>
+							<p>Constrained movement gives choices their order dependency, while a freely walking avatar determines each pull's endpoint.</p>
+						</article>
+						<article class="inspiration">
+							<p class="decision-label">Helltaker</p>
+							<h3>Short, readable sessions</h3>
+							<p>A tone reference for compact puzzles with a clear finish—not a template for level count, difficulty, or mechanics.</p>
+						</article>
+					</div>
+				</div>
+			</section>
+
+			<section id="choices" class="design-section" aria-labelledby="choices-title">
+				<div class="section-heading">
+					<p class="section-number">03 · Design</p>
+					<h2 id="choices-title">Let geometry do the work.</h2>
+				</div>
+				<div class="section-body">
+					<p>Two verbs—walk and pull—carry the game. The interface shows the next pull without revealing the plan.</p>
+					<ul class="compact-list">
+						<li><strong>Shape anywhere</strong><span>Any three corners of a 2×2 square win, in any location or rotation.</span></li>
+						<li><strong>Predictable pulls</strong><span>The target and exact stopping tile appear before commitment.</span></li>
+						<li><strong>Easy recovery</strong><span>Undo tracks pulls, not walking. Solving matters more than matching par.</span></li>
+					</ul>
+				</div>
+			</section>
+
+			<section id="alternatives" class="design-section" aria-labelledby="alternatives-title">
+				<div class="section-heading">
+					<p class="section-number">04 · Alternatives</p>
+					<h2 id="alternatives-title">What stayed out.</h2>
+				</div>
+				<div class="section-body">
+					<ul class="compact-list">
+						<li><strong>Aim mode and dragging</strong><span>Both add input states or imply free placement. Direct box selection is clearer across pointer, touch, and keyboard.</span></li>
+						<li><strong>Transparent pillars and auto-alignment</strong><span>Both change or bypass the core question: where can the player stand?</span></li>
+						<li><strong>Timers, powers, and randomness</strong><span>They add burden before the existing geometry has run out of depth.</span></li>
+					</ul>
+				</div>
+			</section>
+			<section id="verification" class="design-section" aria-labelledby="verification-title">
+				<div class="section-heading">
+					<p class="section-number">05 · Verification</p>
+					<h2 id="verification-title">How a room earns its place.</h2>
+				</div>
+				<div class="section-body">
+					<p>New layouts face both mechanical proof and human play.</p>
+					<ul class="compact-list">
+						<li><strong>Exhaust the state graph</strong><span>Analysis proves the room is solvable, establishes par, counts shortest routes, and finds reachable states with no winning continuation.</span></li>
+						<li><strong>Replay through the game</strong><span>A concrete solution runs through the same movement and session rules used by the player.</span></li>
+						<li><strong>Play for clarity</strong><span>Solver numbers cannot show whether a choice is readable or satisfying. Playtesting has to do that.</span></li>
+					</ul>
+				</div>
+			</section>
+		</main>
+
+		<footer class="site-footer">
+			<p>A concise public companion to Tether's working design documents.</p>
+			<p>
+				<a class="source-link" href="https://github.com/npalladium/tether/blob/main/design-draft.md">Full design draft</a>
+				·
+				<a class="source-link" href="https://github.com/npalladium/tether/blob/main/docs/tether-gameplay-best-practices.md">Gameplay notes</a>
+			</p>
+		</footer>
+	</body>
+</html>
